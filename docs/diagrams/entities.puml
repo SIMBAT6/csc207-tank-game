@@ -1,0 +1,97 @@
+@startuml entities
+title Ricochet Tanks - Entities
+
+class Tank {
+  - id: int
+  - x: double
+  - y: double
+  - angle: double
+  - speed: double
+  - alive: boolean
+  - maxBullets: int
+  - powerUp: PowerUp
+  + moveForward(): void
+  + moveBackward(): void
+  + rotate(direction: int): void
+  + fire(): List<Bullet>
+  + destroy(): void
+  + applyPowerUp(p: PowerUp): void
+  + getBounds(): Rectangle
+}
+
+class Bullet {
+  - ownerId: int
+  - x: double
+  - y: double
+  - velocityX: double
+  - velocityY: double
+  - bouncesLeft: int
+  - lifetime: int
+  + move(): void
+  + bounceHorizontal(): void
+  + bounceVertical(): void
+  + isExpired(): boolean
+  + hits(t: Tank): boolean
+}
+
+class Maze {
+  - rows: int
+  - cols: int
+  - cellSize: int
+  + collidesWithWall(bounds: Rectangle): boolean
+  + getRandomEmptyCell(): Point
+  + getSpawnPoints(): List<Point>
+}
+
+class Wall {
+  - x: int
+  - y: int
+  - width: int
+  - height: int
+  + intersects(bounds: Rectangle): boolean
+}
+
+abstract class PowerUp {
+  - x: double
+  - y: double
+  - duration: int
+  + {abstract} fire(t: Tank): List<Bullet>
+  + isExpired(): boolean
+}
+
+class ShotgunPowerUp
+class LaserPowerUp
+class ShieldPowerUp
+
+class Player {
+  - username: String
+  - isGuest: boolean
+  - wins: int
+  - losses: int
+  + recordWin(): void
+  + recordLoss(): void
+}
+
+class Match {
+  - score1: int
+  - score2: int
+  - roundOver: boolean
+  + tick(): void
+  + startRound(): void
+  + endRound(winner: Player): void
+}
+
+PowerUp <|-- ShotgunPowerUp
+PowerUp <|-- LaserPowerUp
+PowerUp <|-- ShieldPowerUp
+
+Maze "1" *-- "many" Wall
+Match "1" o-- "2" Player
+Match "1" *-- "2" Tank
+Match "1" *-- "1" Maze
+Match "1" *-- "many" Bullet
+Match "1" *-- "many" PowerUp
+Tank "1" o-- "0..1" PowerUp : holds
+Bullet --> Tank : owner
+
+@enduml
