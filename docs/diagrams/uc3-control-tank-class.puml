@@ -1,0 +1,182 @@
+@startuml uc3-control-tank-class
+title UC3 Control Tank - Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "view" {
+  class GameView {
+    - timer: javax.swing.Timer
+    - pressedKeys: Set<Integer>
+    + propertyChange(evt): void
+    # paintComponent(g): void
+  }
+}
+
+package "interface_adapter.control_tank" {
+  class ControlTankController {
+    - interactor: ControlTankInputBoundary
+    - player1Keys: KeyBindings
+    - player2Keys: KeyBindings
+    + execute(pressedKeys: Set<Integer>): void
+  }
+
+  class KeyBindings {
+    - forward: int
+    - backward: int
+    - left: int
+    - right: int
+    - fire: int
+    + toCommand(pressedKeys: Set<Integer>): TankCommand
+  }
+
+  class ControlTankPresenter {
+    - gameViewModel: GameViewModel
+    + prepareTickView(data: ControlTankOutputData): void
+    + prepareRoundOverView(data: ControlTankOutputData): void
+  }
+}
+
+package "interface_adapter.game  (shared with UC2/UC4/UC5)" {
+  class GameViewModel
+  class GameState {
+    - tanks: List<TankSprite>
+    - bullets: List<BulletSprite>
+    - roundOver: boolean
+    - winnerId: int
+  }
+}
+
+package "use_case.control_tank" {
+  interface ControlTankInputBoundary {
+    + execute(input: ControlTankInputData): void
+  }
+
+  class ControlTankInputData {
+    - player1: TankCommand
+    - player2: TankCommand
+  }
+
+  class TankCommand {
+    - forward: boolean
+    - backward: boolean
+    - left: boolean
+    - right: boolean
+    - fire: boolean
+  }
+
+  class ControlTankInteractor {
+    - dataAccess: ControlTankDataAccessInterface
+    - presenter: ControlTankOutputBoundary
+    + execute(input: ControlTankInputData): void
+    - applyCommand(tank: Tank, command: TankCommand, match: Match): void
+    - resolveHits(match: Match): void
+  }
+
+  interface ControlTankDataAccessInterface {
+    + getCurrentMatch(): Match
+  }
+
+  interface ControlTankOutputBoundary {
+    + prepareTickView(data: ControlTankOutputData): void
+    + prepareRoundOverView(data: ControlTankOutputData): void
+  }
+
+  class ControlTankOutputData {
+    - tanks: List<TankData>
+    - bullets: List<BulletData>
+    - roundOver: boolean
+    - winnerId: int
+  }
+}
+
+package "entity" {
+  class Match {
+    + getTanks(): List<Tank>
+    + getMaze(): Maze
+    + getBullets(): List<Bullet>
+    + addBullets(bullets: List<Bullet>): void
+    + removeExpiredBullets(): void
+    + isRoundOver(): boolean
+  }
+
+  class Tank {
+    + {static} RADIUS: double
+    - x, y, angle: double
+    - alive: boolean
+    - cooldown: int
+    - weapon: Weapon
+    + rotate(direction: int): void
+    + drive(direction: int, maze: Maze): void
+    + canFire(activeBullets: int): boolean
+    + fire(): List<Bullet>
+    + destroy(): void
+    + setWeapon(weapon: Weapon): void
+  }
+
+  class Bullet {
+    + {static} RADIUS: double
+    - ownerId: int
+    - x, y, velocityX, velocityY: double
+    - lifetime: int
+    + update(maze: Maze): void
+    + hits(tank: Tank): boolean
+    + isExpired(): boolean
+    + expire(): void
+  }
+
+  class Maze {
+    + blocksCircle(x: double, y: double, radius: double): boolean
+  }
+
+  class Wall {
+    + intersectsCircle(x: double, y: double, radius: double): boolean
+  }
+
+  interface Weapon {
+    + createBullets(tank: Tank): List<Bullet>
+  }
+
+  class StandardWeapon
+}
+
+package "data_access" {
+  class InMemoryMatchDataAccessObject {
+    - currentMatch: Match
+    + getCurrentMatch(): Match
+    + save(match: Match): void
+  }
+}
+
+' --- dependencies (all point inward) ---
+GameView --> ControlTankController : calls every tick
+GameView --> GameViewModel : listens
+ControlTankController --> KeyBindings
+ControlTankController --> ControlTankInputBoundary
+ControlTankPresenter ..|> ControlTankOutputBoundary
+ControlTankPresenter --> GameViewModel
+GameViewModel --> GameState
+
+ControlTankInteractor ..|> ControlTankInputBoundary
+ControlTankInteractor --> ControlTankDataAccessInterface
+ControlTankInteractor --> ControlTankOutputBoundary
+ControlTankInputData --> TankCommand
+ControlTankInteractor --> Match
+
+InMemoryMatchDataAccessObject ..|> ControlTankDataAccessInterface
+
+Match *-- Tank
+Match *-- Bullet
+Match *-- Maze
+Maze *-- Wall
+Tank --> Weapon
+StandardWeapon ..|> Weapon
+
+note bottom of Weapon
+  UC4 adds power-up weapons
+  (e.g. ShotgunWeapon) without
+  changing UC3 code (OCP)
+end note
+
+@enduml

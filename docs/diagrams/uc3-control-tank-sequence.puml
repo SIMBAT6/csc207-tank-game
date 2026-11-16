@@ -1,0 +1,61 @@
+@startuml uc3-control-tank-sequence
+title UC3 Control Tank - One Game Tick
+
+actor Player
+participant "Swing Timer" as Timer
+participant GameView
+participant ControlTankController as Controller
+participant ControlTankInteractor as Interactor
+participant "ControlTankDataAccessInterface" as DAO
+participant Match
+participant Tank
+participant Bullet
+participant ControlTankPresenter as Presenter
+participant GameViewModel
+
+Player -> GameView : hold / release keys
+note right of GameView : keyPressed / keyReleased\nupdate pressedKeys
+
+Timer -> GameView : tick (every 16 ms)
+GameView -> Controller : execute(pressedKeys)
+Controller -> Controller : player1Keys.toCommand(pressedKeys)\nplayer2Keys.toCommand(pressedKeys)
+Controller -> Interactor : execute(ControlTankInputData)
+Interactor -> DAO : getCurrentMatch()
+DAO --> Interactor : match
+
+loop each alive tank
+  Interactor -> Tank : rotate(direction)
+  Interactor -> Tank : drive(direction, maze)
+  note right of Tank : undoes the move\nif it would hit a wall
+  opt fire pressed && canFire(activeBullets)
+    Interactor -> Tank : fire()
+    Tank --> Interactor : bullets (from its Weapon)
+    Interactor -> Match : addBullets(bullets)
+  end
+end
+
+loop each bullet
+  Interactor -> Bullet : update(maze)
+  note right of Bullet : move, bounce off walls,\nlifetime - 1
+  opt bullet hits an alive tank
+    Interactor -> Tank : destroy()
+    Interactor -> Bullet : expire()
+  end
+end
+Interactor -> Match : removeExpiredBullets()
+
+alt match.isRoundOver()
+  Interactor -> Presenter : prepareRoundOverView(outputData)
+else
+  Interactor -> Presenter : prepareTickView(outputData)
+end
+
+Presenter -> GameViewModel : setState(...)\nfirePropertyChanged()
+GameViewModel --> GameView : propertyChange
+GameView -> GameView : repaint()
+
+opt state.isRoundOver()
+  GameView -> GameView : stop timer, hand over to\nUC5 EndRoundController
+end
+
+@enduml
