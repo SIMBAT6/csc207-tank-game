@@ -2,7 +2,6 @@ package entity;
 
 /**
  * An axis-aligned wall segment inside a maze.
- * TODO (UC2/UC3 leads): add intersects(...) for collision checks.
  */
 public class Wall {
     private final int x;
@@ -15,6 +14,18 @@ public class Wall {
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+
+    /**
+     * Whether a circle overlaps this wall. Finds the point of the wall closest to the
+     * circle's centre and checks if it lies strictly inside the circle.
+     */
+    public boolean intersectsCircle(double centerX, double centerY, double radius) {
+        double nearestX = Math.max(x, Math.min(centerX, x + width));
+        double nearestY = Math.max(y, Math.min(centerY, y + height));
+        double dx = centerX - nearestX;
+        double dy = centerY - nearestY;
+        return dx * dx + dy * dy < radius * radius;
     }
 
     public int getX() {

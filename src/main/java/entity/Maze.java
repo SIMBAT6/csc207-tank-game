@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * A grid-based maze made of walls.
- * TODO (UC2 lead): add collidesWithWall(...), getRandomEmptyCell() and getSpawnPoints().
+ * TODO (UC2 lead): add getRandomEmptyCell() and getSpawnPoints().
  */
 public class Maze {
     private final int rows;
@@ -18,6 +18,30 @@ public class Maze {
         this.cols = cols;
         this.cellSize = cellSize;
         this.walls = new ArrayList<>(walls);
+    }
+
+    /**
+     * Whether a circle at this position would overlap a wall or stick out of the maze.
+     * The bounds check keeps tanks and bullets inside even without outer walls.
+     */
+    public boolean blocksCircle(double x, double y, double radius) {
+        if (x - radius < 0 || y - radius < 0 || x + radius > getWidth() || y + radius > getHeight()) {
+            return true;
+        }
+        for (Wall wall : walls) {
+            if (wall.intersectsCircle(x, y, radius)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public int getWidth() {
+        return cols * cellSize;
+    }
+
+    public int getHeight() {
+        return rows * cellSize;
     }
 
     public int getRows() {
