@@ -127,21 +127,26 @@ round, the result is **recorded** to their account through an external API, and 
 
 See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML class diagram.
 
-**`Tank`**
-- Variables: `id`, `x`, `y`, `angle`, `speed`, `alive`, `maxBullets`, `powerUp` (nullable)
-- Methods: `moveForward()`, `moveBackward()`, `rotate(direction)`, `fire(): List<Bullet>`, `destroy()`, `applyPowerUp(PowerUp)`, `getBounds()`
+**`Tank`** *(collides as a circle of radius `RADIUS`)*
+- Constants: `RADIUS`, `SPEED`, `ROTATION_SPEED`, `FIRE_COOLDOWN`, `MAX_BULLETS`
+- Variables: `id`, `x`, `y`, `angle`, `alive`, `cooldown`, `weapon: Weapon`
+- Methods: `rotate(direction)`, `drive(direction, Maze)`, `coolDown()`, `canFire(activeBullets)`, `fire(): List<Bullet>`, `destroy()`, `setWeapon(Weapon)`
 
-**`Bullet`**
-- Variables: `owner` (Tank id), `x`, `y`, `velocityX`, `velocityY`, `bouncesLeft`, `lifetime`
-- Methods: `move()`, `bounceHorizontal()`, `bounceVertical()`, `isExpired()`, `hits(Tank)`
+**`Weapon`** *(interface; `StandardWeapon` fires one bullet, power-ups add more)*
+- Methods: `createBullets(Tank): List<Bullet>`
+
+**`Bullet`** *(collides as a circle of radius `RADIUS`)*
+- Constants: `RADIUS`, `SPEED`, `LIFETIME`, `ARMING_TICKS`
+- Variables: `ownerId`, `x`, `y`, `velocityX`, `velocityY`, `lifetime`
+- Methods: `update(Maze)` (move + bounce), `hits(Tank)`, `isExpired()`, `expire()`
 
 **`Maze`**
 - Variables: `rows`, `cols`, `cellSize`, `walls: List<Wall>`
-- Methods: `collidesWithWall(bounds)`, `getRandomEmptyCell()`, `getSpawnPoints()`
+- Methods: `blocksCircle(x, y, radius)`, `getWidth()`, `getHeight()`, `getRandomEmptyCell()`, `getSpawnPoints()`
 
 **`Wall`**
 - Variables: `x`, `y`, `width`, `height`
-- Methods: `intersects(bounds)`
+- Methods: `intersectsCircle(x, y, radius)`
 
 **`PowerUp`** *(abstract; e.g. `ShotgunPowerUp`, `LaserPowerUp`, `ShieldPowerUp`)*
 - Variables: `x`, `y`, `type`, `duration`

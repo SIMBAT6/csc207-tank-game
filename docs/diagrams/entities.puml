@@ -2,43 +2,57 @@
 title Ricochet Tanks - Entities
 
 class Tank {
+  + {static} RADIUS: double
+  + {static} SPEED: double
+  + {static} ROTATION_SPEED: double
+  + {static} FIRE_COOLDOWN: int
+  + {static} MAX_BULLETS: int
   - id: int
   - x: double
   - y: double
   - angle: double
-  - speed: double
   - alive: boolean
-  - maxBullets: int
-  - powerUp: PowerUp
-  + moveForward(): void
-  + moveBackward(): void
+  - cooldown: int
+  - weapon: Weapon
   + rotate(direction: int): void
+  + drive(direction: int, maze: Maze): void
+  + coolDown(): void
+  + canFire(activeBullets: int): boolean
   + fire(): List<Bullet>
   + destroy(): void
-  + applyPowerUp(p: PowerUp): void
-  + getBounds(): Rectangle
+  + setWeapon(weapon: Weapon): void
 }
 
+interface Weapon {
+  + createBullets(tank: Tank): List<Bullet>
+}
+
+class StandardWeapon
+
 class Bullet {
+  + {static} RADIUS: double
+  + {static} SPEED: double
+  + {static} LIFETIME: int
+  + {static} ARMING_TICKS: int
   - ownerId: int
   - x: double
   - y: double
   - velocityX: double
   - velocityY: double
-  - bouncesLeft: int
   - lifetime: int
-  + move(): void
-  + bounceHorizontal(): void
-  + bounceVertical(): void
-  + isExpired(): boolean
+  + update(maze: Maze): void
   + hits(t: Tank): boolean
+  + isExpired(): boolean
+  + expire(): void
 }
 
 class Maze {
   - rows: int
   - cols: int
   - cellSize: int
-  + collidesWithWall(bounds: Rectangle): boolean
+  + blocksCircle(x: double, y: double, radius: double): boolean
+  + getWidth(): int
+  + getHeight(): int
   + getRandomEmptyCell(): Point
   + getSpawnPoints(): List<Point>
 }
@@ -48,7 +62,7 @@ class Wall {
   - y: int
   - width: int
   - height: int
-  + intersects(bounds: Rectangle): boolean
+  + intersectsCircle(x: double, y: double, radius: double): boolean
 }
 
 abstract class PowerUp {
@@ -91,7 +105,8 @@ Match "1" *-- "2" Tank
 Match "1" *-- "1" Maze
 Match "1" *-- "many" Bullet
 Match "1" *-- "many" PowerUp
-Tank "1" o-- "0..1" PowerUp : holds
+Tank "1" o-- "1" Weapon
+StandardWeapon ..|> Weapon
 Bullet --> Tank : owner
 
 @enduml
