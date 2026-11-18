@@ -3,7 +3,6 @@ package entity;
 /**
  * A tank controlled by one player.
  * TODO (UC3 lead): add movement, rotation, firing and collision bounds.
- * TODO (UC4 lead): add applyPowerUp(PowerUp).
  */
 public class Tank {
     private final int id;
@@ -53,7 +52,27 @@ public class Tank {
         return maxBullets;
     }
 
+    /** @return the power-up this tank holds, or null if it uses the normal weapon. */
     public PowerUp getPowerUp() {
         return powerUp;
+    }
+
+    /**
+     * Gives this tank a power-up (UC4). Replaces any power-up it already holds.
+     *
+     * @param newPowerUp the collected power-up
+     */
+    public void applyPowerUp(PowerUp newPowerUp) {
+        this.powerUp = newPowerUp;
+    }
+
+    /** Removes the held power-up so the tank goes back to its normal weapon (UC4). */
+    public void clearPowerUp() {
+        this.powerUp = null;
+    }
+
+    /** @return true if the held power-up currently protects this tank from hits. */
+    public boolean hasShield() {
+        return powerUp != null && powerUp.providesShield();
     }
 }
