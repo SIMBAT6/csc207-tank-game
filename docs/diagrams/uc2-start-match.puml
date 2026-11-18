@@ -1,0 +1,62 @@
+@startuml
+title Ricochet Tanks - UC2 Start Match
+
+class StartMatchController {
+    - inputBoundary: StartMatchInputBoundary
+    + startMatch(mapId: String, matchFormat: MatchFormat): void
+}
+
+interface StartMatchInputBoundary {
+    + execute(inputData: StartMatchInputData): void
+}
+
+class StartMatchInputData {
+    - mapId: String
+    - matchFormat: MatchFormat
+    + getMapId(): String
+    + getMatchFormat(): MatchFormat
+}
+
+enum MatchFormat {
+    BO1
+    BO3
+    BO5
+    --
+    - winsToWin: int
+    + getWinsToWin(): int
+}
+
+class StartMatchInteractor {
+    - outputBoundary: StartMatchOutputBoundary
+    + execute(inputData: StartMatchInputData): void
+}
+
+interface StartMatchOutputBoundary {
+    + presentSuccess(outputData: StartMatchOutputData): void
+    + presentError(message: String): void
+}
+
+class StartMatchOutputData
+
+class StartMatchPresenter {
+    + presentSuccess(outputData: StartMatchOutputData): void
+    + presentError(message: String): void
+}
+
+class Match {
+    - score1: int
+    - score2: int
+    - winsToWin: int
+    + startRound(): void
+}
+
+StartMatchController --> StartMatchInputBoundary
+StartMatchInputBoundary ..> StartMatchInputData
+StartMatchInputBoundary <|.. StartMatchInteractor
+StartMatchInputData --> MatchFormat
+StartMatchInteractor --> StartMatchOutputBoundary
+StartMatchInteractor ..> Match : creates
+StartMatchOutputBoundary ..> StartMatchOutputData
+StartMatchOutputBoundary <|.. StartMatchPresenter
+
+@enduml
