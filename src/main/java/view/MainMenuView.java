@@ -37,8 +37,11 @@ public class MainMenuView extends JPanel {
 
         // TODO (UC1 lead): open the login view.
         logInButton.setEnabled(false);
-        // TODO (UC5 lead): open the leaderboard view.
-        leaderboardButton.setEnabled(false);
+    }
+
+    /** Runs when the Leaderboard button is clicked (View Leaderboard, UC5). */
+    public void setLeaderboardAction(Runnable action) {
+        leaderboardButton.addActionListener(e -> action.run());
     }
 
     /** TODO (UC2 lead): replace with a call to the StartMatchController. */
