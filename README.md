@@ -127,22 +127,24 @@ round, the result is **recorded** to their account through an external API, and 
 
 See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML class diagram.
 
-**`Tank`** *(collides as a circle of radius `RADIUS`)*
-- Constants: `RADIUS`, `SPEED`, `ROTATION_SPEED`, `FIRE_COOLDOWN`, `MAX_BULLETS`
-- Variables: `id`, `x`, `y`, `angle`, `alive`, `cooldown`, `weapon: Weapon`
-- Methods: `rotate(direction)`, `drive(direction, Maze)`, `coolDown()`, `canFire(activeBullets)`, `fire(): List<Bullet>`, `destroy()`, `setWeapon(Weapon)`
+**`Tank`** *(collides as a circle of radius `getRadius()`)*
+- Constants: `DEFAULT_RADIUS`, `SPEED`, `ROTATION_SPEED`, `FIRE_COOLDOWN`, `MAX_BULLETS`
+- Variables: `id`, `x`, `y`, `angle`, `radius`, `alive`, `shielded`, `cooldown`, `weapon: Weapon`
+- Methods: `rotate(direction)`, `drive(direction, Maze)`, `coolDown()`, `canFire(activeBullets)`, `fire(): List<Bullet>`, `takeHit(): boolean`, `destroy()`
+- Power-up hooks: `setWeapon(Weapon)`, `setRadius(r)`, `tryResetRadius(Maze)`, `setShielded(boolean)` (a shield absorbs one hit)
 
 **`Weapon`** *(interface; `StandardWeapon` fires one bullet, power-ups add more)*
 - Methods: `createBullets(Tank): List<Bullet>`
 
-**`Bullet`** *(collides as a circle of radius `RADIUS`)*
-- Constants: `RADIUS`, `SPEED`, `LIFETIME`, `ARMING_TICKS`
-- Variables: `ownerId`, `x`, `y`, `velocityX`, `velocityY`, `lifetime`
-- Methods: `update(Maze)` (move + bounce), `hits(Tank)`, `isExpired()`, `expire()`
+**`Bullet`** *(collides as a circle of radius `getRadius()`; subclassed by power-ups)*
+- Constants: `DEFAULT_RADIUS`, `SPEED`, `LIFETIME`, `ARMING_DISTANCE`
+- Variables: `ownerId`, `x`, `y`, `velocityX`, `velocityY`, `lifetime`, `distanceTravelled`
+- Methods: `update(Maze)` (one step: move + bounce), `age()` (once per tick), `hits(Tank)`, `isExpired()`, `expire()`
+- Overridable hooks: `getRadius()`, `getStepsPerTick()`, `hitsWall(Maze)`, `onHitTank()`, `getPath()`
 
 **`Maze`**
 - Variables: `rows`, `cols`, `cellSize`, `walls: List<Wall>`
-- Methods: `blocksCircle(x, y, radius)`, `getWidth()`, `getHeight()`, `getRandomEmptyCell()`, `getSpawnPoints()`
+- Methods: `blocksCircle(x, y, radius)` (walls only — the maze must be enclosed by outer walls), `contains(x, y)`, `getWidth()`, `getHeight()`, `getRandomEmptyCell()`, `getSpawnPoints()`
 
 **`Wall`**
 - Variables: `x`, `y`, `width`, `height`

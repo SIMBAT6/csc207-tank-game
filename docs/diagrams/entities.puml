@@ -2,7 +2,7 @@
 title Ricochet Tanks - Entities
 
 class Tank {
-  + {static} RADIUS: double
+  + {static} DEFAULT_RADIUS: double
   + {static} SPEED: double
   + {static} ROTATION_SPEED: double
   + {static} FIRE_COOLDOWN: int
@@ -11,7 +11,9 @@ class Tank {
   - x: double
   - y: double
   - angle: double
+  - radius: double
   - alive: boolean
+  - shielded: boolean
   - cooldown: int
   - weapon: Weapon
   + rotate(direction: int): void
@@ -19,8 +21,12 @@ class Tank {
   + coolDown(): void
   + canFire(activeBullets: int): boolean
   + fire(): List<Bullet>
+  + takeHit(): boolean
   + destroy(): void
   + setWeapon(weapon: Weapon): void
+  + setRadius(radius: double): void
+  + tryResetRadius(maze: Maze): boolean
+  + setShielded(shielded: boolean): void
 }
 
 interface Weapon {
@@ -30,20 +36,27 @@ interface Weapon {
 class StandardWeapon
 
 class Bullet {
-  + {static} RADIUS: double
+  + {static} DEFAULT_RADIUS: double
   + {static} SPEED: double
   + {static} LIFETIME: int
-  + {static} ARMING_TICKS: int
+  + {static} ARMING_DISTANCE: double
   - ownerId: int
   - x: double
   - y: double
   - velocityX: double
   - velocityY: double
   - lifetime: int
+  - distanceTravelled: double
   + update(maze: Maze): void
+  + age(): void
   + hits(t: Tank): boolean
   + isExpired(): boolean
   + expire(): void
+  + getRadius(): double
+  + getStepsPerTick(): int
+  # hitsWall(maze: Maze): boolean
+  + onHitTank(): void
+  + getPath(): List<double[]>
 }
 
 class Maze {
@@ -51,6 +64,7 @@ class Maze {
   - cols: int
   - cellSize: int
   + blocksCircle(x: double, y: double, radius: double): boolean
+  + contains(x: double, y: double): boolean
   + getWidth(): int
   + getHeight(): int
   + getRandomEmptyCell(): Point

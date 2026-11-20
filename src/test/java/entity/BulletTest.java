@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,15 +65,15 @@ class BulletTest {
     }
 
     @Test
-    void expiresAfterLifetime() {
+    void expiresAfterLifetimeTicks() {
         Bullet bullet = new Bullet(1, 100, 100, 0, 0);
 
         for (int i = 0; i < Bullet.LIFETIME - 1; i++) {
-            bullet.update(openMaze);
+            bullet.age();
         }
         assertFalse(bullet.isExpired());
 
-        bullet.update(openMaze);
+        bullet.age();
         assertTrue(bullet.isExpired());
     }
 
@@ -84,6 +85,15 @@ class BulletTest {
 
         assertTrue(bullet.isExpired());
         assertFalse(bullet.hits(new Tank(2, 100, 100, 0)));
+    }
+
+    @Test
+    void expiresWhenItLeavesTheMaze() {
+        Bullet bullet = new Bullet(1, 498, 100, 4, 0);
+
+        bullet.update(openMaze);
+
+        assertTrue(bullet.isExpired());
     }
 
     @Test
@@ -101,11 +111,21 @@ class BulletTest {
     }
 
     @Test
-    void cannotHitOwnerUntilArmed() {
-        Tank owner = new Tank(1, 100, 100, 0);
+    void reachUsesTheTanksCurrentRadius() {
         Bullet bullet = new Bullet(1, 100, 100, 0, 0);
+        Tank smallTank = new Tank(2, 115, 100, 0);
+        smallTank.setRadius(8);
 
-        for (int i = 0; i < Bullet.ARMING_TICKS - 1; i++) {
+        assertFalse(bullet.hits(smallTank));
+    }
+
+    @Test
+    void cannotHitOwnerUntilItHasTravelledArmingDistance() {
+        Tank owner = new Tank(1, 140, 100, 0);
+        Bullet bullet = new Bullet(1, 100, 100, Bullet.SPEED, 0);
+        int stepsToArm = (int) (Bullet.ARMING_DISTANCE / Bullet.SPEED);
+
+        for (int i = 0; i < stepsToArm - 1; i++) {
             bullet.update(openMaze);
         }
         assertFalse(bullet.hits(owner));
@@ -120,5 +140,54 @@ class BulletTest {
         tank.destroy();
 
         assertFalse(new Bullet(1, 100, 100, 0, 0).hits(tank));
+    }
+
+    @Test
+    void onHitTankExpiresANormalBullet() {
+        Bullet bullet = new Bullet(1, 100, 100, 0, 0);
+
+        bullet.onHitTank();
+
+        assertTrue(bullet.isExpired());
+    }
+
+    @Test
+    void normalBulletMovesOneStepAndDrawsAsOnePoint() {
+        Bullet bullet = new Bullet(1, 100, 100, 0, 0);
+
+        assertEquals(1, bullet.getStepsPerTick());
+        assertEquals(1, bullet.getPath().size());
+        assertArrayEquals(new double[] {100, 100}, bullet.getPath().get(0), EPS);
+    }
+
+    @Test
+    void subclassCanPierceWalls() {
+        Maze maze = new Maze(10, 10, 50, List.of(verticalWall));
+        Bullet piercing = new Bullet(1, 114, 100, 4, 0) {
+            @Override
+            protected boolean hitsWall(Maze m) {
+                return false;
+            }
+        };
+
+        piercing.update(maze);
+
+        assertEquals(118, piercing.getX(), EPS);
+        assertEquals(4, piercing.getVelocityX(), EPS);
+    }
+
+    @Test
+    void subclassCanChangeRadiusAndLifetime() {
+        Bullet cannonBall = new Bullet(1, 100, 100, 0, 0, 2) {
+            @Override
+            public double getRadius() {
+                return 10;
+            }
+        };
+
+        assertTrue(cannonBall.hits(new Tank(2, 120, 100, 0)));
+        cannonBall.age();
+        cannonBall.age();
+        assertTrue(cannonBall.isExpired());
     }
 }

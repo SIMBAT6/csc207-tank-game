@@ -29,15 +29,22 @@ class MazeTest {
     }
 
     @Test
-    void circleStickingOutOfMazeIsBlocked() {
-        assertTrue(maze.blocksCircle(10, 100, 14));
-        assertTrue(maze.blocksCircle(490, 100, 14));
-        assertTrue(maze.blocksCircle(100, 10, 14));
-        assertTrue(maze.blocksCircle(100, 490, 14));
+    void onlyWallsBlockNotTheMazeEdge() {
+        assertFalse(maze.blocksCircle(5, 100, 14));
     }
 
     @Test
-    void circleTouchingMazeEdgeIsNotBlocked() {
-        assertFalse(maze.blocksCircle(14, 100, 14));
+    void outerWallsKeepCirclesInside() {
+        Maze enclosed = new Maze(10, 10, 50, List.of(new Wall(0, 0, 6, 500)));
+
+        assertTrue(enclosed.blocksCircle(15, 100, 14));
+    }
+
+    @Test
+    void containsPointsInsideTheMazeArea() {
+        assertTrue(maze.contains(0, 0));
+        assertTrue(maze.contains(500, 500));
+        assertFalse(maze.contains(-1, 100));
+        assertFalse(maze.contains(100, 501));
     }
 }

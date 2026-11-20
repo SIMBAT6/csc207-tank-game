@@ -132,4 +132,47 @@ class TankTest {
         assertSame(tripleShot, tank.getWeapon());
         assertEquals(3, tank.fire().size());
     }
+
+    @Test
+    void smallerTankFitsWhereDefaultSizeIsBlocked() {
+        Tank tank = new Tank(1, 105, 100, 0);
+        tank.setRadius(8);
+
+        tank.drive(1, mazeWithWall);
+
+        assertEquals(105 + Tank.SPEED, tank.getX(), EPS);
+    }
+
+    @Test
+    void tryResetRadiusWaitsUntilThereIsRoom() {
+        Tank tank = new Tank(1, 110, 100, 0);
+        tank.setRadius(8);
+
+        assertFalse(tank.tryResetRadius(mazeWithWall));
+        assertEquals(8, tank.getRadius(), EPS);
+
+        assertTrue(tank.tryResetRadius(openMaze));
+        assertEquals(Tank.DEFAULT_RADIUS, tank.getRadius(), EPS);
+    }
+
+    @Test
+    void takeHitWithoutShieldDestroysTank() {
+        Tank tank = new Tank(1, 100, 100, 0);
+
+        assertTrue(tank.takeHit());
+        assertFalse(tank.isAlive());
+    }
+
+    @Test
+    void shieldAbsorbsExactlyOneHit() {
+        Tank tank = new Tank(1, 100, 100, 0);
+        tank.setShielded(true);
+
+        assertFalse(tank.takeHit());
+        assertTrue(tank.isAlive());
+        assertFalse(tank.isShielded());
+
+        assertTrue(tank.takeHit());
+        assertFalse(tank.isAlive());
+    }
 }
