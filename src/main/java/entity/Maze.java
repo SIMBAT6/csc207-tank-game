@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A grid-based maze made of walls.
+ * A grid-based maze made of walls. The maze must be enclosed by outer walls: only walls
+ * stop tanks and bullets, there is no invisible boundary.
  * TODO (UC2 lead): add getRandomEmptyCell() and getSpawnPoints().
  */
 public class Maze {
@@ -20,20 +21,19 @@ public class Maze {
         this.walls = new ArrayList<>(walls);
     }
 
-    /**
-     * Whether a circle at this position would overlap a wall or stick out of the maze.
-     * The bounds check keeps tanks and bullets inside even without outer walls.
-     */
+    /** Whether a circle at this position would overlap any wall. */
     public boolean blocksCircle(double x, double y, double radius) {
-        if (x - radius < 0 || y - radius < 0 || x + radius > getWidth() || y + radius > getHeight()) {
-            return true;
-        }
         for (Wall wall : walls) {
             if (wall.intersectsCircle(x, y, radius)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** Whether a point lies inside the maze area (e.g. a wall-piercing bullet has not left it). */
+    public boolean contains(double x, double y) {
+        return x >= 0 && y >= 0 && x <= getWidth() && y <= getHeight();
     }
 
     public int getWidth() {

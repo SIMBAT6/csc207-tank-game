@@ -3,11 +3,14 @@ package entity;
 import java.util.List;
 
 /**
- * A tank controlled by one player. For collisions a tank is a circle of radius RADIUS.
+ * A tank controlled by one player. For collisions a tank is a circle of radius getRadius().
  * Angles are in radians; 0 faces right and angles grow clockwise (screen y points down).
+ *
+ * <p>Power-ups (UC4) change a tank only through setWeapon, setRadius / tryResetRadius
+ * and setShielded.</p>
  */
 public class Tank {
-    public static final double RADIUS = 14;
+    public static final double DEFAULT_RADIUS = 14;
     public static final double SPEED = 2.0;
     public static final double ROTATION_SPEED = 0.06;
     public static final int FIRE_COOLDOWN = 15;
@@ -17,7 +20,9 @@ public class Tank {
     private double x;
     private double y;
     private double angle;
+    private double radius = DEFAULT_RADIUS;
     private boolean alive = true;
+    private boolean shielded;
     private int cooldown;
     private Weapon weapon = new StandardWeapon();
 
@@ -51,12 +56,12 @@ public class Tank {
         }
         double dx = Math.cos(angle) * SPEED * direction;
         double dy = Math.sin(angle) * SPEED * direction;
-        if (!maze.blocksCircle(x + dx, y + dy, RADIUS)) {
+        if (!maze.blocksCircle(x + dx, y + dy, radius)) {
             x += dx;
             y += dy;
-        } else if (!maze.blocksCircle(x + dx, y, RADIUS)) {
+        } else if (!maze.blocksCircle(x + dx, y, radius)) {
             x += dx;
-        } else if (!maze.blocksCircle(x, y + dy, RADIUS)) {
+        } else if (!maze.blocksCircle(x, y + dy, radius)) {
             y += dy;
         }
     }
@@ -81,8 +86,52 @@ public class Tank {
         return weapon.createBullets(this);
     }
 
+    /**
+     * Called when a bullet hits this tank. A shield absorbs the hit and is used up;
+     * otherwise the tank is destroyed.
+     *
+     * @return true if the tank was destroyed
+     */
+    public boolean takeHit() {
+        if (shielded) {
+            shielded = false;
+            return false;
+        }
+        destroy();
+        return true;
+    }
+
     public void destroy() {
         alive = false;
+    }
+
+    /**
+     * Grows back to DEFAULT_RADIUS, unless that would overlap a wall at the current position.
+     *
+     * @return true if the tank is back to its default size
+     */
+    public boolean tryResetRadius(Maze maze) {
+        if (maze.blocksCircle(x, y, DEFAULT_RADIUS)) {
+            return false;
+        }
+        radius = DEFAULT_RADIUS;
+        return true;
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    public void setRadius(double radius) {
+        this.radius = radius;
+    }
+
+    public boolean isShielded() {
+        return shielded;
+    }
+
+    public void setShielded(boolean shielded) {
+        this.shielded = shielded;
     }
 
     public Weapon getWeapon() {
