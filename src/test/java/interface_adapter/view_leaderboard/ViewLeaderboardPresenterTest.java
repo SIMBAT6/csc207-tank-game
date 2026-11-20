@@ -1,6 +1,5 @@
 package interface_adapter.view_leaderboard;
 
-import interface_adapter.ViewManagerModel;
 import org.junit.jupiter.api.Test;
 import use_case.view_leaderboard.ViewLeaderboardOutputData;
 
@@ -13,11 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class ViewLeaderboardPresenterTest {
 
     @Test
-    void successFillsTableAndSwitchesScreen() {
+    void successFillsTable() {
         final LeaderboardViewModel viewModel = new LeaderboardViewModel();
-        final ViewManagerModel viewManagerModel = new ViewManagerModel();
+        final int[] fired = {0};
+        viewModel.addPropertyChangeListener(evt -> fired[0]++);
 
-        new ViewLeaderboardPresenter(viewModel, viewManagerModel).prepareSuccessView(
+        new ViewLeaderboardPresenter(viewModel).prepareSuccessView(
                 new ViewLeaderboardOutputData(Arrays.asList(
                         new ViewLeaderboardOutputData.Row(1, "alice", 6, 2),
                         new ViewLeaderboardOutputData.Row(2, "bob", 1, 4))));
@@ -25,17 +25,15 @@ class ViewLeaderboardPresenterTest {
         assertEquals(2, viewModel.getState().getRows().size());
         assertArrayEquals(new String[] {"1", "alice", "6", "2"}, viewModel.getState().getRows().get(0));
         assertNull(viewModel.getState().getErrorMessage());
-        assertEquals(LeaderboardViewModel.VIEW_NAME, viewManagerModel.getState());
+        assertEquals(1, fired[0]);
     }
 
     @Test
-    void failShowsErrorOnLeaderboardScreen() {
+    void failShowsError() {
         final LeaderboardViewModel viewModel = new LeaderboardViewModel();
-        final ViewManagerModel viewManagerModel = new ViewManagerModel();
 
-        new ViewLeaderboardPresenter(viewModel, viewManagerModel).prepareFailView("server down");
+        new ViewLeaderboardPresenter(viewModel).prepareFailView("server down");
 
         assertEquals("server down", viewModel.getState().getErrorMessage());
-        assertEquals(LeaderboardViewModel.VIEW_NAME, viewManagerModel.getState());
     }
 }

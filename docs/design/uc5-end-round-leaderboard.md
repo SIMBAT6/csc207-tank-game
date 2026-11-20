@@ -27,11 +27,12 @@ Out of scope: deciding who survived (UC3), creating the match / next round and `
 
 **View Leaderboard**
 
-1. `MainMenuView` → `ViewLeaderboardController.execute()`.
+1. `MainMenuView` switches to `LeaderboardView`, which shows "Loading..." and calls
+   `ViewLeaderboardController.execute()` inside a `SwingWorker` (the API call must not freeze the window).
 2. `ViewLeaderboardInteractor` calls `dataAccess.getAllPlayers()`, ranks them with the `Leaderboard` entity,
    and builds `ViewLeaderboardOutputData` rows (rank, username, wins, losses).
-3. `ViewLeaderboardPresenter` fills `LeaderboardState` and switches the screen to `LeaderboardView`;
-   on `DataAccessException` it shows the error on the same screen instead.
+3. `ViewLeaderboardPresenter` fills `LeaderboardState`; on `DataAccessException` it sets an error message instead.
+   `LeaderboardView` hands the update to the Swing event thread (`invokeLater`).
 
 ## Key decisions
 
@@ -43,6 +44,8 @@ Out of scope: deciding who survived (UC3), creating the match / next round and `
 | **Ranking rule lives in the `Leaderboard` entity**: wins ↓, then losses ↑, then username | One place to change the rule. |
 | **All records are stored in one shared API account** (`ricochet-tanks-leaderboard`), info = `{"players": {"alice": {"wins": 3, "losses": 1}}}` | The course API has no "list all users" call, so per-player info can't be ranked. One account can be read with one GET. The account is created on first use. |
 | **`recordResult` reads, increments and writes** instead of sending the local `Player` totals | The saved record stays right even if the local `Player` was created with old numbers. |
+| **Results count per round** (agreed with the team): each round won = 1 win, lost = 1 loss | Matches the round-by-round flow; a BO3 won 2:1 gives the winner 2 wins and 1 loss. |
+| **Leaderboard loads in a `SwingWorker`** | API calls take up to a second; on the Swing thread they would freeze the window. End Round will do the same when it is wired in. |
 | **API failure never blocks the game** | Alternative flow: scores still update on screen; the banner shows a "not saved" warning. |
 | **Guests are skipped** | Alternative flow: guest results are not recorded. |
 | **`DataAccessException` is checked and lives in `use_case`** | Interactors must handle a failed save/load; any use case can reuse it. |

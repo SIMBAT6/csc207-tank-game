@@ -26,6 +26,7 @@ package "view" {
   class LeaderboardView {
     - tableModel: DefaultTableModel
     - messageLabel: JLabel
+    + load(): void
     + propertyChange(evt): void
   }
 }
@@ -60,7 +61,6 @@ package "interface_adapter.view_leaderboard" {
 
   class ViewLeaderboardPresenter {
     - viewModel: LeaderboardViewModel
-    - viewManagerModel: ViewManagerModel
     + prepareSuccessView(data: ViewLeaderboardOutputData): void
     + prepareFailView(errorMessage: String): void
   }
@@ -213,8 +213,8 @@ EndRoundPresenter --> EndRoundViewModel
 EndRoundViewModel --> EndRoundState
 
 ' --- view leaderboard ---
-MainMenuView --> ViewLeaderboardController : Leaderboard button
-LeaderboardView --> ViewLeaderboardController : Refresh
+MainMenuView --> LeaderboardView : Leaderboard button
+LeaderboardView --> ViewLeaderboardController : load() in a SwingWorker
 LeaderboardView --> LeaderboardViewModel : listens
 ViewLeaderboardController --> ViewLeaderboardInputBoundary
 ViewLeaderboardInteractor ..|> ViewLeaderboardInputBoundary

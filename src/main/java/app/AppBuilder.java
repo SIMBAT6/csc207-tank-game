@@ -56,13 +56,15 @@ public class AppBuilder {
 
     /** View Leaderboard (UC5): main menu button, Refresh and Back on the leaderboard screen. */
     public AppBuilder addViewLeaderboardUseCase() {
-        final ViewLeaderboardPresenter presenter =
-                new ViewLeaderboardPresenter(leaderboardViewModel, viewManagerModel);
+        final ViewLeaderboardPresenter presenter = new ViewLeaderboardPresenter(leaderboardViewModel);
         final ViewLeaderboardController controller = new ViewLeaderboardController(
                 new ViewLeaderboardInteractor(playerStatsDataAccessObject, presenter));
         leaderboardView.setController(controller);
         leaderboardView.setBackAction(() -> switchTo(MainMenuView.VIEW_NAME));
-        mainMenuView.setLeaderboardAction(controller::execute);
+        mainMenuView.setLeaderboardAction(() -> {
+            switchTo(LeaderboardView.VIEW_NAME);
+            leaderboardView.load();
+        });
         return this;
     }
 

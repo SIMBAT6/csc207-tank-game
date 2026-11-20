@@ -1,6 +1,5 @@
 package interface_adapter.view_leaderboard;
 
-import interface_adapter.ViewManagerModel;
 import use_case.view_leaderboard.ViewLeaderboardOutputBoundary;
 import use_case.view_leaderboard.ViewLeaderboardOutputData;
 
@@ -8,15 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Fills the leaderboard screen and switches to it.
+ * Fills the leaderboard screen. (The screen is already showing "Loading..." while the API is called.)
  */
 public class ViewLeaderboardPresenter implements ViewLeaderboardOutputBoundary {
     private final LeaderboardViewModel viewModel;
-    private final ViewManagerModel viewManagerModel;
 
-    public ViewLeaderboardPresenter(LeaderboardViewModel viewModel, ViewManagerModel viewManagerModel) {
+    public ViewLeaderboardPresenter(LeaderboardViewModel viewModel) {
         this.viewModel = viewModel;
-        this.viewManagerModel = viewManagerModel;
     }
 
     @Override
@@ -46,7 +43,5 @@ public class ViewLeaderboardPresenter implements ViewLeaderboardOutputBoundary {
     private void show(LeaderboardState state) {
         viewModel.setState(state);
         viewModel.firePropertyChanged();
-        viewManagerModel.setState(viewModel.getViewName());
-        viewManagerModel.firePropertyChanged();
     }
 }

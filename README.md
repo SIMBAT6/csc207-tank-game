@@ -172,13 +172,16 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 
 | API | Documentation | Status |
 |---|---|---|
-| CSC207 course user/password + info API (used by the `DBUserDataAccessObject` example) | [Postman docs](https://www.postman.com/cloudy-astronaut-813156/csc207-apis-2026/collection/puzltp3/5-password-protected-user) | ✅ Called (UC5: `GET /user`, `POST /user`, `PUT /modifyUserInfo`) |
+| CSC207 course user/password + info API (`https://csc207-20269-vm.teach.cs.toronto.edu`, used by the `DBUserDataAccessObject` example) | [Postman docs](https://www.postman.com/cloudy-astronaut-813156/csc207-apis-2026/collection/puzltp3/5-password-protected-user) | ✅ Called (UC5: `GET /user`, `POST /user`, `PUT /modifyUserInfo`) |
 
 **How we use it:**
 - **Sign up / log in** (UC1): create a user with a username and password, and check credentials when logging in.
 - **Save results** (UC5): the API cannot list all users, so every player's `wins` and `losses` are stored in the info
   JSON of one shared account, `ricochet-tanks-leaderboard`: `{"players": {"alice": {"wins": 3, "losses": 1}}}`.
 - **Leaderboard** (UC5): read that one account's info and rank the players by wins.
+- Results are counted **per round**: every round won adds 1 win, every round lost adds 1 loss (a BO3 won 2:1 gives the
+  winner 2 wins, 1 loss). Draws and guests are not recorded.
+- API calls for the leaderboard run on a background thread (`SwingWorker`) so the window doesn't freeze.
 
 This API satisfies both the **external API** and the **data persistence** requirements.
 
