@@ -1,0 +1,98 @@
+
+@startuml
+title UC1 — Log In / Sign Up | CSC207 Ricochet Tanks
+
+skinparam classAttributeIconSize 0
+skinparam linetype polyline
+
+class LoginView {
+    - controller: LoginController
+    --
+    + showLoginForm(side: int): void
+    + showError(message: String): void
+    + showLoggedIn(name: String, side: int): void
+}
+
+class LoginController {
+    - loginUseCase: LoginInputBoundary
+    - signupUseCase: SignupInputBoundary
+    --
+    + login(name: String, password: String, side: int): void
+    + signup(name: String, password: String, side: int): void
+    + continueAsGuest(side: int): void
+}
+
+interface LoginInputBoundary {
+    + login(name: String, password: String, side: int): void
+    + continueAsGuest(side: int): void
+}
+
+interface SignupInputBoundary {
+    + signup(name: String, password: String, side: int): void
+}
+
+class LoginInteractor {
+    - users: UserDataAccessInterface
+    - presenter: LoginOutputBoundary
+    --
+    + login(name: String, password: String, side: int): void
+    + continueAsGuest(side: int): void
+}
+
+class SignupInteractor {
+    - users: UserDataAccessInterface
+    - presenter: LoginOutputBoundary
+    --
+    + signup(name: String, password: String, side: int): void
+}
+
+interface UserDataAccessInterface {
+    + exists(name: String): boolean
+    + authenticate(name: String, password: String): boolean
+    + createUser(name: String, password: String): void
+}
+
+class APIUserDataAccessObject {
+    + exists(name: String): boolean
+    + authenticate(name: String, password: String): boolean
+    + createUser(name: String, password: String): void
+}
+
+interface LoginOutputBoundary {
+    + prepareSuccess(name: String, side: int): void
+    + prepareFailure(message: String): void
+}
+
+class LoginPresenter {
+    - viewModel: LoginViewModel
+    --
+    + prepareSuccess(name: String, side: int): void
+    + prepareFailure(message: String): void
+}
+
+class LoginViewModel {
+    + player1Name: String
+    + player2Name: String
+    + errorMessage: String
+}
+
+LoginView --> LoginController
+
+LoginController --> LoginInputBoundary
+LoginController --> SignupInputBoundary
+
+LoginInteractor ..|> LoginInputBoundary
+SignupInteractor ..|> SignupInputBoundary
+
+LoginInteractor --> UserDataAccessInterface
+SignupInteractor --> UserDataAccessInterface
+
+LoginInteractor --> LoginOutputBoundary
+SignupInteractor --> LoginOutputBoundary
+
+APIUserDataAccessObject ..|> UserDataAccessInterface
+LoginPresenter ..|> LoginOutputBoundary
+
+LoginPresenter --> LoginViewModel
+
+@enduml
