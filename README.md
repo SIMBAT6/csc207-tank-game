@@ -25,8 +25,8 @@ CSC207 Fall 2026 Final Project
 
 Ricochet Tanks is a top-down, two-player tank battle game built with Java Swing. Two **players** share one
 keyboard; each controls a **tank** inside a **maze** made of **walls**. A tank can move forward and backward,
-rotate, and fire **bullets**. Bullets travel in a straight line and **bounce** off walls a limited number of times
-before disappearing, so players can hit opponents around corners — including themselves. When a tank is hit,
+rotate, and fire **bullets**. Bullets travel in a straight line and **bounce** off walls until their lifetime
+runs out, so players can hit opponents around corners — including themselves. When a tank is hit,
 it is destroyed and the **round** ends; the surviving player earns a point.
 
 During a round, **power-ups** spawn at random empty cells of the maze. A tank that drives over a power-up
@@ -79,16 +79,19 @@ round, the result is **recorded** to their account through an external API, and 
 #### UC3: Control Tank — *Lead: TODO Member 3*
 **Main Flow:**
 1. During a round, a player holds a movement key (Player 1: `W A S D`, Player 2: arrow keys).
-2. On every game tick, the system moves/rotates that tank, stopping it at walls.
+2. On every game tick, the system moves/rotates that tank, sliding it along walls instead of through them.
 3. The player presses the fire key (Player 1: `Q`, Player 2: `M`).
-4. The system spawns a bullet in front of the tank.
+4. The system fires the tank's current weapon; the bullet starts at the tank's centre.
 5. On every game tick, the system moves all bullets, bouncing them off walls.
 6. The system redraws the game screen.
 
 **Alternative Flows:**
-- The tank already has the maximum number of bullets on screen: no bullet is fired.
-- A bullet has bounced its maximum number of times or has expired: the system removes it.
+- The tank already has the maximum number of bullets on screen, or fired too recently: no bullet is fired.
+- A bullet's lifetime runs out: the system removes it.
 - A bullet hits a tank: the system destroys that tank and the round ends (continues in UC5).
+- A bullet hits a tank with a shield: the shield is used up and the tank survives.
+- A bullet bounces back to the tank that fired it: that tank is hit too.
+- Both tanks are destroyed on the same tick: the round is a draw (continues in UC5).
 
 #### UC4: Collect Power-Up — *Lead: TODO Member 4*
 **Main Flow:**
