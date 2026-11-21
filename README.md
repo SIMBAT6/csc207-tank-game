@@ -7,7 +7,7 @@ CSC207 Fall 2026 Final Project
 | Member | GitHub | MVP Use Case Lead |
 |---|---|---|
 | TODO Member 1 | @TODO | UC1 – Log In / Sign Up |
-|Weibo Yu | asxyr | UC2 – Start Match |
+| Weibo Yu | @asxyr | UC2 – Start Match |
 | TODO Member 3 | @TODO | UC3 – Control Tank |
 | TODO Member 4 | @TODO | UC4 – Collect Power-Up |
 | TODO Member 5 | @TODO | UC5 – End Round & Leaderboard |
@@ -63,16 +63,18 @@ round, the result is **recorded** to their account through an external API, and 
 - The username is already taken during sign up: the system shows an error.
 - Local account storage is unavailable: the system shows an error and offers to play as a guest.
 
-#### UC2: Start Match — *Lead: TODO Member 2*
+#### UC2: Start Match — *Lead: Weibo Yu*
 **Main Flow:**
-1. On the main menu, the player selects a map, a match format(bo1,bo3, bo5) and clicks **Start**, there will have 5 different maps and random selected in bo1 and bo3, and all five in bo5.
-2. The system generates the maze for the select map and then place tanks in valid spawn point.
-3. The system create a new match and set it to 0-0 and set the win need to win the match to 1 for bo1, 2 for bo3 and 3 for bo5
+1. On the main menu, the player selects a map and a match format (BO1, BO3 or BO5) and clicks **Start**.
+   There are 5 maps: BO1 and BO3 play maps chosen at random, and BO5 plays all five.
+2. The system generates the maze for the selected map and places both tanks at valid spawn points.
+3. The system creates a new match with the score at 0–0 and sets the round wins needed to win the match:
+   1 for BO1, 2 for BO3, 3 for BO5.
 4. The system switches to the game screen and starts the first round.
 
 **Alternative Flows:**
-- **Random map**: The player chooses **Random**: the system generates a new random maze.
-- **Guest player**: the system use log-in account for each side if that is signed in, side without singed in will play as a guest.
+- **Random map:** the player chooses **Random**: the system generates a new random maze.
+- **Guest player:** each side that is logged in plays with its account; a side that is not logged in plays as a guest.
 
 #### UC3: Control Tank — *Lead: TODO Member 3*
 **Main Flow:**
