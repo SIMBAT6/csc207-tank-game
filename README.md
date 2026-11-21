@@ -4,13 +4,13 @@ CSC207 Fall 2026 Final Project
 
 ## Team
 
-| Member | GitHub | MVP Use Case Lead |
-|---|---|---|
-| TODO Member 1 | @TODO | UC1 – Log In / Sign Up |
-| Weibo Yu | @asxyr | UC2 – Start Match |
-| TODO Member 3 | @TODO | UC3 – Control Tank |
-| TODO Member 4 | @TODO | UC4 – Collect Power-Up |
-| TODO Member 5 | @TODO | UC5 – End Round & Leaderboard |
+| Member | GitHub | MVP Use Case Lead | Also responsible for |
+|---|---|---|---|
+| TODO Member 1 | @christy80116002-star | UC1 – Log In / Sign Up | Login screen, saved accounts, the current players for each side (`CurrentPlayerDataAccessInterface`) |
+| Weibo Yu | @asxyr | UC2 – Start Match | Maps and maze generation, spawn points, the current match store (`InMemoryMatchDataAccessObject`), drawing walls (`MAZE` layer) |
+| TODO Member 3 | @SIMBAT6 | UC3 – Control Tank | Game loop and game screen framework (`GameView`, layers), tank and bullet rules, power-up hooks on `Tank`/`Bullet` |
+| TODO Member 4 | @ulsancitiboi | UC4 – Collect Power-Up | Power-up types and spawning, drawing power-ups and aim lines (`ITEMS` layer), power-up status (`OVERLAY` layer) |
+| TODO Member 5 | @Edev-cmd | UC5 – End Round & Leaderboard | Course API access (`DBPlayerStatsDataAccessObject`), scores and round result overlay, leaderboard screen |
 
 > **Workflow:** `main` is protected. All work happens on feature branches and is merged through Pull Requests
 > with at least one review. Every PR should update this README if it changes the design or progress.
