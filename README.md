@@ -54,14 +54,14 @@ round, the result is **recorded** to their account through an external API, and 
 #### UC1: Log In / Sign Up — *Lead: TODO Member 1*
 **Main Flow:**
 1. From the start screen, a player enters a username and password and clicks **Log In**.
-2. The system checks the credentials with the account API.
+2. The login interactor checks the password against the saved account.
 3. The system marks the player as logged in for the chosen side (Player 1 or Player 2) and shows their name on the menu.
 
 **Alternative Flows:**
-- The player clicks **Sign Up** instead: the system creates a new account through the API, then logs the player in.
+- The player clicks **Sign Up** instead: the system saves a new local account, then logs the player in.
 - The username does not exist or the password is wrong: the system shows an error and stays on the login form.
 - The username is already taken during sign up: the system shows an error.
-- The API cannot be reached: the system shows an error and offers to play as a guest (results will not be saved).
+- Local account storage is unavailable: the system shows an error and offers to play as a guest.
 
 #### UC2: Start Match — *Lead: TODO Member 2*
 **Main Flow:**
@@ -182,7 +182,7 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 | CSC207 course user/password + info API (`https://csc207-20269-vm.teach.cs.toronto.edu`, used by the `DBUserDataAccessObject` example) | [Postman docs](https://www.postman.com/cloudy-astronaut-813156/csc207-apis-2026/collection/puzltp3/5-password-protected-user) | ✅ Called (UC5: `GET /user`, `POST /user`, `PUT /modifyUserInfo`) |
 
 **How we use it:**
-- **Sign up / log in** (UC1): create a user with a username and password, and check credentials when logging in.
+- **Sign up / log in** (UC1): accounts are saved locally in `~/.ricochet-tanks/accounts.properties` with salted password hashes. Player selections are held in memory for the current run. Course API integration is planned.
 - **Save results** (UC5): the API cannot list all users, so every player's `wins` and `losses` are stored in the info
   JSON of one shared account, `ricochet-tanks-leaderboard`: `{"players": {"alice": {"wins": 3, "losses": 1}}}`.
 - **Leaderboard** (UC5): read that one account's info and rank the players by wins.
@@ -199,6 +199,7 @@ This API satisfies both the **external API** and the **data persistence** requir
 1. Open the project in IntelliJ and load it as a Maven project.
 2. Use a JDK of version 11 or newer, with the project language level set to 11.
 3. Run `app.Main`.
+4. From the main menu, click **Log In**, choose Player 1 or Player 2, and sign up, log in, or continue as a guest.
 
 Run the tests with `mvn test`, or right-click `src/test/java` → **Run 'All Tests'** in IntelliJ.
 
