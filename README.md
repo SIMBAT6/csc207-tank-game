@@ -7,7 +7,7 @@ CSC207 Fall 2026 Final Project
 | Member | GitHub | MVP Use Case Lead |
 |---|---|---|
 | TODO Member 1 | @TODO | UC1 – Log In / Sign Up |
-| TODO Member 2 | @TODO | UC2 – Start Match |
+| Weibo Yu | @asxyr | UC2 – Start Match |
 | TODO Member 3 | @TODO | UC3 – Control Tank |
 | TODO Member 4 | @TODO | UC4 – Collect Power-Up |
 | TODO Member 5 | @TODO | UC5 – End Round & Leaderboard |
@@ -40,7 +40,7 @@ round, the result is **recorded** to their account through an external API, and 
 ## User Stories
 
 1. **Account** — As a player, I want to sign up or log in before a match so that my wins are saved under my name.
-2. **Start match** — As a player, I want to pick a map and start a local two-player match so that my friend and I can play on one keyboard.
+2. **Start match** — As a player, I want to pick a map and a match format so that my friend and I can play a local two-player match on one keyboard.
 3. **Control tank** — As a player, I want to drive my tank and fire bullets that bounce off walls so that I can outmanoeuvre my opponent.
 4. **Power-ups** — As a player, I want power-ups to appear in the maze so that I can grab a special weapon and turn the fight around.
 5. **Leaderboard** — As a player, I want each round's result recorded and to see a leaderboard so that I can compare my record with other players.
@@ -63,16 +63,18 @@ round, the result is **recorded** to their account through an external API, and 
 - The username is already taken during sign up: the system shows an error.
 - Local account storage is unavailable: the system shows an error and offers to play as a guest.
 
-#### UC2: Start Match — *Lead: TODO Member 2*
+#### UC2: Start Match — *Lead: Weibo Yu*
 **Main Flow:**
-1. On the main menu, the player selects a map and clicks **Start**.
-2. The system generates the maze for that map.
-3. The system places both tanks at spawn points far apart from each other.
-4. The system switches to the game screen and starts the round.
+1. On the main menu, the player selects a map and a match format (BO1, BO3 or BO5) and clicks **Start**.
+   There are 5 maps: BO1 and BO3 play maps chosen at random, and BO5 plays all five.
+2. The system generates the maze for the selected map and places both tanks at valid spawn points.
+3. The system creates a new match with the score at 0–0 and sets the round wins needed to win the match:
+   1 for BO1, 2 for BO3, 3 for BO5.
+4. The system switches to the game screen and starts the first round.
 
 **Alternative Flows:**
-- The player chooses **Random**: the system generates a new random maze.
-- A player is not logged in: the system starts the match with that side as a guest.
+- **Random map:** the player chooses **Random**: the system generates a new random maze.
+- **Guest player:** each side that is logged in plays with its account; a side that is not logged in plays as a guest.
 
 #### UC3: Control Tank — *Lead: TODO Member 3*
 **Main Flow:**
