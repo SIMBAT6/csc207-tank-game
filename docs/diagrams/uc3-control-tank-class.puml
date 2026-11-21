@@ -5,12 +5,37 @@ skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
 hide empty members
 
+package "app" {
+  class AppBuilder {
+    + addControlTankUseCase(): AppBuilder
+  }
+}
+
 package "view" {
   class GameView {
     - timer: javax.swing.Timer
     - pressedKeys: Set<Integer>
-    + propertyChange(evt): void
-    # paintComponent(g): void
+    + addTickAction(action: Runnable): void
+    + addPainter(layer: GameLayer, painter: GameLayerPainter): void
+    + getPressedKeys(): Set<Integer>
+    + start(): void
+    + stop(): void
+  }
+
+  enum GameLayer {
+    MAZE
+    ITEMS
+    TANKS
+    OVERLAY
+  }
+
+  interface GameLayerPainter {
+    + paint(g: Graphics2D): void
+  }
+
+  class ControlTankPainter {
+    - viewModel: ControlTankViewModel
+    + paint(g: Graphics2D): void
   }
 }
 
@@ -23,28 +48,23 @@ package "interface_adapter.control_tank" {
   }
 
   class KeyBindings {
-    - forward: int
-    - backward: int
-    - left: int
-    - right: int
-    - fire: int
+    - forward, backward, left, right, fire: int
     + toCommand(pressedKeys: Set<Integer>): TankCommand
   }
 
   class ControlTankPresenter {
-    - gameViewModel: GameViewModel
+    - viewModel: ControlTankViewModel
     + prepareTickView(data: ControlTankOutputData): void
     + prepareRoundOverView(data: ControlTankOutputData): void
   }
-}
 
-package "interface_adapter.game  (shared with UC2/UC4/UC5)" {
-  class GameViewModel
-  class GameState {
-    - tanks: List<TankSprite>
-    - bullets: List<BulletSprite>
+  class ControlTankViewModel
+
+  class ControlTankState {
+    - tanks: List<TankData>
+    - bullets: List<BulletData>
     - roundOver: boolean
-    - winnerId: int
+    - winner: int
   }
 }
 
@@ -59,10 +79,8 @@ package "use_case.control_tank" {
   }
 
   class TankCommand {
-    - forward: boolean
-    - backward: boolean
-    - left: boolean
-    - right: boolean
+    - drive: int  {-1 back, 0, 1 forward}
+    - turn: int  {-1 left, 0, 1 right}
     - fire: boolean
   }
 
@@ -70,8 +88,9 @@ package "use_case.control_tank" {
     - dataAccess: ControlTankDataAccessInterface
     - presenter: ControlTankOutputBoundary
     + execute(input: ControlTankInputData): void
-    - applyCommand(tank: Tank, command: TankCommand, match: Match): void
-    - resolveHits(match: Match): void
+    - controlTank(tank: Tank, command: TankCommand, match: Match): void
+    - moveBullet(bullet: Bullet, match: Match): void
+    - winner(match: Match): int
   }
 
   interface ControlTankDataAccessInterface {
@@ -87,47 +106,67 @@ package "use_case.control_tank" {
     - tanks: List<TankData>
     - bullets: List<BulletData>
     - roundOver: boolean
-    - winnerId: int
+    - winner: int
+  }
+
+  class TankData {
+    - id: int
+    - x, y, angle, radius: double
+    - alive, shielded: boolean
+  }
+
+  class BulletData {
+    - ownerId: int
+    - radius: double
+    - path: List<double[]>
   }
 }
 
 package "entity" {
   class Match {
-    + getTanks(): List<Tank>
+    + {static} PLAYER_1 = 1
+    + {static} PLAYER_2 = 2
+    + {static} DRAW = -1
+    + getTank1(): Tank
+    + getTank2(): Tank
     + getMaze(): Maze
     + getBullets(): List<Bullet>
-    + addBullets(bullets: List<Bullet>): void
-    + removeExpiredBullets(): void
     + isRoundOver(): boolean
   }
 
   class Tank {
-    + {static} RADIUS: double
-    - x, y, angle: double
-    - alive: boolean
-    - cooldown: int
-    - weapon: Weapon
+    + {static} DEFAULT_RADIUS = 14
+    + {static} FIRE_COOLDOWN = 15
+    + {static} MAX_BULLETS = 5
     + rotate(direction: int): void
     + drive(direction: int, maze: Maze): void
+    + coolDown(): void
     + canFire(activeBullets: int): boolean
     + fire(): List<Bullet>
-    + destroy(): void
+    + takeHit(): boolean
     + setWeapon(weapon: Weapon): void
+    + setRadius(radius: double): void
+    + tryResetRadius(maze: Maze): boolean
+    + setShielded(shielded: boolean): void
   }
 
   class Bullet {
-    + {static} RADIUS: double
-    - ownerId: int
-    - x, y, velocityX, velocityY: double
-    - lifetime: int
+    + {static} DEFAULT_RADIUS = 3
+    + {static} ARMING_DISTANCE = 40
     + update(maze: Maze): void
+    + age(): void
     + hits(tank: Tank): boolean
+    + onHitTank(): void
+    + getRadius(): double
+    + getStepsPerTick(): int
+    + getPath(): List<double[]>
+    # hitsWall(maze: Maze): boolean
     + isExpired(): boolean
-    + expire(): void
   }
 
   class Maze {
     + blocksCircle(x: double, y: double, radius: double): boolean
+    + contains(x: double, y: double): boolean
   }
 
   class Wall {
@@ -142,27 +181,34 @@ package "entity" {
 }
 
 package "data_access" {
-  class InMemoryMatchDataAccessObject {
-    - currentMatch: Match
+  class InMemoryMatchDataAccessObject <<UC2>> {
     + getCurrentMatch(): Match
-    + save(match: Match): void
   }
 }
 
+' --- wiring ---
+AppBuilder ..> GameView : addTickAction,\naddPainter(TANKS)
+AppBuilder ..> ControlTankController
+AppBuilder ..> ControlTankViewModel : on roundOver:\nstop loop, call UC5
+
 ' --- dependencies (all point inward) ---
-GameView --> ControlTankController : calls every tick
-GameView --> GameViewModel : listens
+ControlTankPainter ..|> GameLayerPainter
+ControlTankPainter --> ControlTankViewModel
+GameView --> GameLayerPainter
 ControlTankController --> KeyBindings
 ControlTankController --> ControlTankInputBoundary
+KeyBindings ..> TankCommand
 ControlTankPresenter ..|> ControlTankOutputBoundary
-ControlTankPresenter --> GameViewModel
-GameViewModel --> GameState
+ControlTankPresenter --> ControlTankViewModel
+ControlTankViewModel --> ControlTankState
 
 ControlTankInteractor ..|> ControlTankInputBoundary
 ControlTankInteractor --> ControlTankDataAccessInterface
 ControlTankInteractor --> ControlTankOutputBoundary
+ControlTankInteractor ..> Match
 ControlTankInputData --> TankCommand
-ControlTankInteractor --> Match
+ControlTankOutputData --> TankData
+ControlTankOutputData --> BulletData
 
 InMemoryMatchDataAccessObject ..|> ControlTankDataAccessInterface
 
@@ -175,8 +221,9 @@ StandardWeapon ..|> Weapon
 
 note bottom of Weapon
   UC4 adds power-up weapons
-  (e.g. ShotgunWeapon) without
-  changing UC3 code (OCP)
+  with tank.setWeapon(...) and special
+  bullets by subclassing Bullet,
+  without changing UC3 code (OCP)
 end note
 
 @enduml
