@@ -105,14 +105,21 @@ round, the result is **recorded** to their account through an external API, and 
 **Main Flow:**
 1. A tank is destroyed during a round.
 2. The system awards a point to the surviving player and shows the updated scores.
-3. The system records the result (win/loss) to each logged-in player's account through the API.
+3. The system records the result (win/loss) for each logged-in player through the API.
 4. After a short delay, the system starts a new round (back to UC2 step 2).
-5. From the main menu, a player clicks **Leaderboard**; the system fetches all accounts' records and shows them ranked by wins.
+5. From the main menu, a player clicks **Leaderboard**; the system fetches all accounts' records and shows them ranked by wins
+   (ties: fewer losses first, then by username).
 
 **Alternative Flows:**
 - Both tanks are destroyed at the same time: the round is a draw and no point is awarded.
 - A player is a guest: their result is not recorded.
 - The API cannot be reached: scores still update on screen, and the system shows a warning that results were not saved.
+- A player reaches the wins needed for the match format (UC2's BO1/BO3/BO5): the system shows the match winner instead
+  of starting a new round; Esc returns to the main menu.
+- The leaderboard cannot be loaded: the leaderboard screen shows an error and a **Refresh** button.
+
+Design notes: [`docs/design/uc5-end-round-leaderboard.md`](docs/design/uc5-end-round-leaderboard.md) ·
+class diagram: [`docs/diagrams/uc5-end-round-leaderboard-class.puml`](docs/diagrams/uc5-end-round-leaderboard-class.puml)
 
 ### Post-MVP (if time permits)
 
@@ -127,21 +134,28 @@ round, the result is **recorded** to their account through an external API, and 
 
 See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML class diagram.
 
-**`Tank`**
-- Variables: `id`, `x`, `y`, `angle`, `speed`, `alive`, `maxBullets`, `powerUp` (nullable)
-- Methods: `moveForward()`, `moveBackward()`, `rotate(direction)`, `fire(): List<Bullet>`, `destroy()`, `applyPowerUp(PowerUp)`, `getBounds()`
+**`Tank`** *(collides as a circle of radius `getRadius()`)*
+- Constants: `DEFAULT_RADIUS`, `SPEED`, `ROTATION_SPEED`, `FIRE_COOLDOWN`, `MAX_BULLETS`
+- Variables: `id`, `x`, `y`, `angle`, `radius`, `alive`, `shielded`, `cooldown`, `weapon: Weapon`
+- Methods: `rotate(direction)`, `drive(direction, Maze)`, `coolDown()`, `canFire(activeBullets)`, `fire(): List<Bullet>`, `takeHit(): boolean`, `destroy()`
+- Power-up hooks: `setWeapon(Weapon)`, `setRadius(r)`, `tryResetRadius(Maze)`, `setShielded(boolean)` (a shield absorbs one hit)
 
-**`Bullet`**
-- Variables: `owner` (Tank id), `x`, `y`, `velocityX`, `velocityY`, `bouncesLeft`, `lifetime`
-- Methods: `move()`, `bounceHorizontal()`, `bounceVertical()`, `isExpired()`, `hits(Tank)`
+**`Weapon`** *(interface; `StandardWeapon` fires one bullet, power-ups add more)*
+- Methods: `createBullets(Tank): List<Bullet>`
+
+**`Bullet`** *(collides as a circle of radius `getRadius()`; subclassed by power-ups)*
+- Constants: `DEFAULT_RADIUS`, `SPEED`, `LIFETIME`, `ARMING_DISTANCE`
+- Variables: `ownerId`, `x`, `y`, `velocityX`, `velocityY`, `lifetime`, `distanceTravelled`
+- Methods: `update(Maze)` (one step: move + bounce), `age()` (once per tick), `hits(Tank)`, `isExpired()`, `expire()`
+- Overridable hooks: `getRadius()`, `getStepsPerTick()`, `hitsWall(Maze)`, `onHitTank()`, `getPath()`
 
 **`Maze`**
 - Variables: `rows`, `cols`, `cellSize`, `walls: List<Wall>`
-- Methods: `collidesWithWall(bounds)`, `getRandomEmptyCell()`, `getSpawnPoints()`
+- Methods: `blocksCircle(x, y, radius)` (walls only — the maze must be enclosed by outer walls), `contains(x, y)`, `getWidth()`, `getHeight()`, `getRandomEmptyCell()`, `getSpawnPoints()`
 
 **`Wall`**
 - Variables: `x`, `y`, `width`, `height`
-- Methods: `intersects(bounds)`
+- Methods: `intersectsCircle(x, y, radius)`
 
 **`PowerUp`** *(abstract; e.g. `ShotgunPowerUp`, `LaserPowerUp`, `ShieldPowerUp`)*
 - Variables: `x`, `y`, `type`, `duration`
@@ -152,8 +166,12 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 - Methods: `recordWin()`, `recordLoss()`
 
 **`Match`**
-- Variables: `player1`, `player2`, `tank1`, `tank2`, `maze`, `bullets`, `powerUps`, `score1`, `score2`, `roundOver`
-- Methods: `tick()`, `startRound()`, `endRound(winner)`
+- Variables: `player1`, `player2`, `tank1`, `tank2`, `maze`, `bullets`, `powerUps`, `score1`, `score2`, `roundOver`, `winsToWin`
+- Methods: `tick()`, `startRound()`, `endRound(winner)`, `isMatchOver()`, `getMatchWinner()`, `getPlayer(side)`
+
+**`Leaderboard`**
+- Variables: `ranking: List<Player>`
+- Methods: `getRanking()` (wins high to low, then fewer losses, then username)
 
 ---
 
@@ -161,12 +179,16 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 
 | API | Documentation | Status |
 |---|---|---|
-| CSC207 course user/password + info API (used by the `DBUserDataAccessObject` example) | TODO: add link from Quercus | ❌ Not yet called |
+| CSC207 course user/password + info API (`https://csc207-20269-vm.teach.cs.toronto.edu`, used by the `DBUserDataAccessObject` example) | [Postman docs](https://www.postman.com/cloudy-astronaut-813156/csc207-apis-2026/collection/puzltp3/5-password-protected-user) | ✅ Called (UC5: `GET /user`, `POST /user`, `PUT /modifyUserInfo`) |
 
 **How we use it:**
 - **Sign up / log in** (UC1): accounts are saved locally in `~/.ricochet-tanks/accounts.properties` with salted password hashes. Player selections are held in memory for the current run. Course API integration is planned.
-- **Save results** (UC5): store a JSON object with each player's `wins` and `losses` in their user info.
-- **Leaderboard** (UC5): read players' stats and rank them by wins.
+- **Save results** (UC5): the API cannot list all users, so every player's `wins` and `losses` are stored in the info
+  JSON of one shared account, `ricochet-tanks-leaderboard`: `{"players": {"alice": {"wins": 3, "losses": 1}}}`.
+- **Leaderboard** (UC5): read that one account's info and rank the players by wins.
+- Results are counted **per round**: every round won adds 1 win, every round lost adds 1 loss (a BO3 won 2:1 gives the
+  winner 2 wins, 1 loss). Draws and guests are not recorded.
+- API calls for the leaderboard run on a background thread (`SwingWorker`) so the window doesn't freeze.
 
 This API satisfies both the **external API** and the **data persistence** requirements.
 
@@ -174,9 +196,37 @@ This API satisfies both the **external API** and the **data persistence** requir
 
 ## How to Run
 
-Open the Maven project in IntelliJ with Java 17 or newer and run `app.Main`. From the main menu, click **Log In**, choose Player 1 or Player 2, and sign up, log in, or continue as a guest.
+1. Open the project in IntelliJ and load it as a Maven project.
+2. Use a JDK of version 11 or newer, with the project language level set to 11.
+3. Run `app.Main`.
+4. From the main menu, click **Log In**, choose Player 1 or Player 2, and sign up, log in, or continue as a guest.
+
+Run the tests with `mvn test`, or right-click `src/test/java` → **Run 'All Tests'** in IntelliJ.
+
+Controls (driving and firing work once Control Tank is merged): Player 1 — `W A S D` to drive, `Q` to fire ·
+Player 2 — arrow keys to drive, `M` to fire · `Esc` — back to the menu.
 
 ## Development Notes
 
 - Diagrams are written in PlantUML and stored in [`docs/diagrams`](docs/diagrams).
 - Package structure follows Clean Architecture: `entity`, `use_case`, `interface_adapter`, `data_access`, `view`, `app`.
+
+### Plugging a use case into the game screen
+
+`GameView` runs the game loop but contains no game rules. Each use case connects to it in its own
+`addXxxUseCase()` method in `AppBuilder`. Nobody needs to edit `GameView`.
+
+- **Every tick:** `gameView.addTickAction(() -> controller.execute(...))`. Actions run in the order they
+  were added, so the order of the `addXxxUseCase()` calls in `Main` matters: Control Tank (UC3) comes before
+  Collect Power-Up (UC4). Use `gameView.getPressedKeys()` and `gameView.getTickCount()` for input.
+- **Drawing:** implement `GameLayerPainter` (usually reading your own view model's state), then call
+  `gameView.addPainter(layer, painter)`. Layers are drawn back to front, whatever order they are added in:
+
+  | Layer | Owner | What |
+  |---|---|---|
+  | `MAZE` | UC2 | walls |
+  | `ITEMS` | UC4 | power-ups on the map, aim lines |
+  | `TANKS` | UC3 | tanks, bullets, laser beams |
+  | `OVERLAY` | UC4, UC5 | power-up status, scores, round banners |
+
+  Each painter gets its own copy of the `Graphics2D`, so colours and strokes don't leak between painters.

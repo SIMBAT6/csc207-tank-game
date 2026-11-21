@@ -5,9 +5,18 @@ import java.util.List;
 
 /**
  * A local two-player match: the maze, both tanks, and everything currently on the field.
- * TODO (UC2 lead): startRound().  TODO (UC3 lead): tick().  TODO (UC5 lead): endRound(winner).
+ * TODO (UC2 lead): startRound().  TODO (UC3 lead): tick().
  */
 public class Match {
+    /** Round winner: player 1's tank survived. */
+    public static final int PLAYER_1 = 1;
+    /** Round winner: player 2's tank survived. */
+    public static final int PLAYER_2 = 2;
+    /** Round winner: both tanks were destroyed on the same tick. */
+    public static final int DRAW = -1;
+    /** No one has won the match yet. */
+    public static final int NO_WINNER = 0;
+
     private final Player player1;
     private final Player player2;
     private Tank tank1;
@@ -18,6 +27,7 @@ public class Match {
     private int score1;
     private int score2;
     private boolean roundOver;
+    private int winsToWin = 1;
 
     public Match(Player player1, Player player2, Maze maze, Tank tank1, Tank tank2) {
         this.player1 = player1;
@@ -65,5 +75,74 @@ public class Match {
 
     public boolean isRoundOver() {
         return roundOver;
+    }
+
+    public int getWinsToWin() {
+        return winsToWin;
+    }
+
+    /**
+     * Sets how many round wins end the match (1 for BO1, 2 for BO3, 3 for BO5). Set by Start Match (UC2).
+     *
+     * @param winsToWin round wins needed, at least 1
+     */
+    public void setWinsToWin(int winsToWin) {
+        if (winsToWin < 1) {
+            throw new IllegalArgumentException("winsToWin must be at least 1, got " + winsToWin);
+        }
+        this.winsToWin = winsToWin;
+    }
+
+    /**
+     * Ends the current round and gives the surviving player a point. A draw gives no point.
+     *
+     * @param winner {@link #PLAYER_1}, {@link #PLAYER_2} or {@link #DRAW}
+     */
+    public void endRound(int winner) {
+        if (winner == PLAYER_1) {
+            score1++;
+        }
+        else if (winner == PLAYER_2) {
+            score2++;
+        }
+        else if (winner != DRAW) {
+            throw new IllegalArgumentException("unknown round winner " + winner);
+        }
+        roundOver = true;
+    }
+
+    /** True once either player has {@link #getWinsToWin()} round wins. */
+    public boolean isMatchOver() {
+        return getMatchWinner() != NO_WINNER;
+    }
+
+    /**
+     * The player who won the whole match.
+     *
+     * @return {@link #PLAYER_1}, {@link #PLAYER_2}, or {@link #NO_WINNER} while the match is still going
+     */
+    public int getMatchWinner() {
+        if (score1 >= winsToWin) {
+            return PLAYER_1;
+        }
+        if (score2 >= winsToWin) {
+            return PLAYER_2;
+        }
+        return NO_WINNER;
+    }
+
+    /**
+     * The player on one side of the match.
+     *
+     * @param side {@link #PLAYER_1} or {@link #PLAYER_2}
+     */
+    public Player getPlayer(int side) {
+        if (side == PLAYER_1) {
+            return player1;
+        }
+        if (side == PLAYER_2) {
+            return player2;
+        }
+        throw new IllegalArgumentException("unknown side " + side);
     }
 }

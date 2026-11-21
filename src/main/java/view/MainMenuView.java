@@ -40,8 +40,11 @@ public class MainMenuView extends JPanel {
             add(Box.createVerticalStrut(12));
         }
 
-        // TODO (UC5 lead): open the leaderboard view.
-        leaderboardButton.setEnabled(false);
+    }
+
+    /** Runs when the Leaderboard button is clicked (View Leaderboard, UC5). */
+    public void setLeaderboardAction(Runnable action) {
+        leaderboardButton.addActionListener(e -> action.run());
     }
 
     public void showPlayers(String player1, String player2) {

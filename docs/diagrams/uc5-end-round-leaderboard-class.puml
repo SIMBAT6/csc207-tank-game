@@ -1,0 +1,252 @@
+@startuml uc5-end-round-leaderboard-class
+title UC5 End Round & View Leaderboard - Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+left to right direction
+
+package "view" {
+  class GameView {
+    + paintComponent(g): void
+  }
+
+  class RoundResultOverlay {
+    + {static} ROUND_DELAY_MS: int
+    - nextRoundTimer: javax.swing.Timer
+    - nextRoundAction: Runnable
+    + propertyChange(evt): void
+    + paint(g: Graphics2D, width: int, height: int): void
+  }
+
+  class MainMenuView {
+    + setLeaderboardAction(action: Runnable): void
+  }
+
+  class LeaderboardView {
+    - tableModel: DefaultTableModel
+    - messageLabel: JLabel
+    + load(): void
+    + propertyChange(evt): void
+  }
+}
+
+package "interface_adapter.end_round" {
+  class EndRoundController {
+    - interactor: EndRoundInputBoundary
+    + execute(winner: int): void
+  }
+
+  class EndRoundPresenter {
+    - viewModel: EndRoundViewModel
+    + prepareRoundOverView(data: EndRoundOutputData): void
+    + prepareMatchOverView(data: EndRoundOutputData): void
+  }
+
+  class EndRoundViewModel
+  class EndRoundState {
+    - score1: int
+    - score2: int
+    - banner: String
+    - warning: String
+    - matchOver: boolean
+  }
+}
+
+package "interface_adapter.view_leaderboard" {
+  class ViewLeaderboardController {
+    - interactor: ViewLeaderboardInputBoundary
+    + execute(): void
+  }
+
+  class ViewLeaderboardPresenter {
+    - viewModel: LeaderboardViewModel
+    + prepareSuccessView(data: ViewLeaderboardOutputData): void
+    + prepareFailView(errorMessage: String): void
+  }
+
+  class LeaderboardViewModel
+  class LeaderboardState {
+    - rows: List<String[]>
+    - errorMessage: String
+  }
+}
+
+package "use_case.end_round" {
+  interface EndRoundInputBoundary {
+    + execute(input: EndRoundInputData): void
+  }
+
+  class EndRoundInputData {
+    - winner: int
+  }
+
+  class EndRoundInteractor {
+    - matchDataAccess: EndRoundMatchDataAccessInterface
+    - statsDataAccess: EndRoundStatsDataAccessInterface
+    - presenter: EndRoundOutputBoundary
+    + execute(input: EndRoundInputData): void
+    - record(player: Player, won: boolean): boolean
+  }
+
+  interface EndRoundMatchDataAccessInterface {
+    + getCurrentMatch(): Match
+  }
+
+  interface EndRoundStatsDataAccessInterface {
+    + recordResult(username: String, won: boolean): void
+  }
+
+  interface EndRoundOutputBoundary {
+    + prepareRoundOverView(data: EndRoundOutputData): void
+    + prepareMatchOverView(data: EndRoundOutputData): void
+  }
+
+  class EndRoundOutputData {
+    - roundWinner: int
+    - roundWinnerName: String
+    - score1: int
+    - score2: int
+    - matchWinner: int
+    - matchWinnerName: String
+    - resultsSaved: boolean
+  }
+}
+
+package "use_case.view_leaderboard" {
+  interface ViewLeaderboardInputBoundary {
+    + execute(): void
+  }
+
+  class ViewLeaderboardInteractor {
+    - dataAccess: ViewLeaderboardDataAccessInterface
+    - presenter: ViewLeaderboardOutputBoundary
+    + execute(): void
+  }
+
+  interface ViewLeaderboardDataAccessInterface {
+    + getAllPlayers(): List<Player>
+  }
+
+  interface ViewLeaderboardOutputBoundary {
+    + prepareSuccessView(data: ViewLeaderboardOutputData): void
+    + prepareFailView(errorMessage: String): void
+  }
+
+  class ViewLeaderboardOutputData {
+    - rows: List<Row>
+  }
+
+  class "ViewLeaderboardOutputData.Row" as Row {
+    - rank: int
+    - username: String
+    - wins: int
+    - losses: int
+  }
+}
+
+package "use_case" {
+  class DataAccessException
+}
+
+package "entity" {
+  class Match {
+    + {static} PLAYER_1: int
+    + {static} PLAYER_2: int
+    + {static} DRAW: int
+    + {static} NO_WINNER: int
+    - score1: int
+    - score2: int
+    - winsToWin: int
+    - roundOver: boolean
+    + endRound(winner: int): void
+    + isMatchOver(): boolean
+    + getMatchWinner(): int
+    + getPlayer(side: int): Player
+    + setWinsToWin(winsToWin: int): void
+  }
+
+  class Player {
+    - username: String
+    - guest: boolean
+    - wins: int
+    - losses: int
+    + recordWin(): void
+    + recordLoss(): void
+  }
+
+  class Leaderboard {
+    - ranking: List<Player>
+    + getRanking(): List<Player>
+  }
+}
+
+package "data_access" {
+  class DBPlayerStatsDataAccessObject {
+    + {static} API_URL: String
+    + {static} LEADERBOARD_ACCOUNT: String
+    + recordResult(username: String, won: boolean): void
+    + getAllPlayers(): List<Player>
+    - loadPlayers(): JSONObject
+    - savePlayers(players: JSONObject): void
+  }
+
+  class InMemoryMatchDataAccessObject {
+    + getCurrentMatch(): Match
+  }
+}
+
+' --- end round (dependencies point inward) ---
+GameView --> EndRoundController : round over (UC3)
+GameView --> RoundResultOverlay : paints
+RoundResultOverlay --> EndRoundViewModel : listens
+EndRoundController --> EndRoundInputBoundary
+EndRoundController ..> EndRoundInputData : creates
+EndRoundInteractor ..|> EndRoundInputBoundary
+EndRoundInteractor --> EndRoundMatchDataAccessInterface
+EndRoundInteractor --> EndRoundStatsDataAccessInterface
+EndRoundInteractor --> EndRoundOutputBoundary
+EndRoundInteractor ..> EndRoundOutputData : creates
+EndRoundInteractor --> Match
+EndRoundPresenter ..|> EndRoundOutputBoundary
+EndRoundPresenter --> EndRoundViewModel
+EndRoundViewModel --> EndRoundState
+
+' --- view leaderboard ---
+MainMenuView --> LeaderboardView : Leaderboard button
+LeaderboardView --> ViewLeaderboardController : load() in a SwingWorker
+LeaderboardView --> LeaderboardViewModel : listens
+ViewLeaderboardController --> ViewLeaderboardInputBoundary
+ViewLeaderboardInteractor ..|> ViewLeaderboardInputBoundary
+ViewLeaderboardInteractor --> ViewLeaderboardDataAccessInterface
+ViewLeaderboardInteractor --> ViewLeaderboardOutputBoundary
+ViewLeaderboardInteractor ..> Leaderboard : ranks with
+ViewLeaderboardInteractor ..> ViewLeaderboardOutputData : creates
+ViewLeaderboardOutputData *-- Row
+ViewLeaderboardPresenter ..|> ViewLeaderboardOutputBoundary
+ViewLeaderboardPresenter --> LeaderboardViewModel
+LeaderboardViewModel --> LeaderboardState
+
+' --- data access ---
+DBPlayerStatsDataAccessObject ..|> EndRoundStatsDataAccessInterface
+DBPlayerStatsDataAccessObject ..|> ViewLeaderboardDataAccessInterface
+InMemoryMatchDataAccessObject ..|> EndRoundMatchDataAccessInterface
+EndRoundStatsDataAccessInterface ..> DataAccessException : throws
+ViewLeaderboardDataAccessInterface ..> DataAccessException : throws
+
+' --- entities ---
+Match o-- "2" Player
+Leaderboard o-- "*" Player
+
+note bottom of DBPlayerStatsDataAccessObject
+  The account API cannot list users, so every
+  record lives in the info JSON of one shared
+  account: {"players": {"alice": {"wins": 3, "losses": 1}}}
+end note
+
+note bottom of InMemoryMatchDataAccessObject
+  Shared with UC2/UC3;
+  added when they merge
+end note
+
+@enduml
