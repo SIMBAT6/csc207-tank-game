@@ -189,9 +189,36 @@ This API satisfies both the **external API** and the **data persistence** requir
 
 ## How to Run
 
-> TODO once the project skeleton exists — expected: Java 17+, Maven, run the `Main` class from IntelliJ.
+1. Open the project in IntelliJ and load it as a Maven project.
+2. Use a JDK of version 11 or newer, with the project language level set to 11.
+3. Run `app.Main`.
+
+Run the tests with `mvn test`, or right-click `src/test/java` → **Run 'All Tests'** in IntelliJ.
+
+Controls (driving and firing work once Control Tank is merged): Player 1 — `W A S D` to drive, `Q` to fire ·
+Player 2 — arrow keys to drive, `M` to fire · `Esc` — back to the menu.
 
 ## Development Notes
 
 - Diagrams are written in PlantUML and stored in [`docs/diagrams`](docs/diagrams).
 - Package structure follows Clean Architecture: `entity`, `use_case`, `interface_adapter`, `data_access`, `view`, `app`.
+
+### Plugging a use case into the game screen
+
+`GameView` runs the game loop but contains no game rules. Each use case connects to it in its own
+`addXxxUseCase()` method in `AppBuilder`. Nobody needs to edit `GameView`.
+
+- **Every tick:** `gameView.addTickAction(() -> controller.execute(...))`. Actions run in the order they
+  were added, so the order of the `addXxxUseCase()` calls in `Main` matters: Control Tank (UC3) comes before
+  Collect Power-Up (UC4). Use `gameView.getPressedKeys()` and `gameView.getTickCount()` for input.
+- **Drawing:** implement `GameLayerPainter` (usually reading your own view model's state), then call
+  `gameView.addPainter(layer, painter)`. Layers are drawn back to front, whatever order they are added in:
+
+  | Layer | Owner | What |
+  |---|---|---|
+  | `MAZE` | UC2 | walls |
+  | `ITEMS` | UC4 | power-ups on the map, aim lines |
+  | `TANKS` | UC3 | tanks, bullets, laser beams |
+  | `OVERLAY` | UC4, UC5 | power-up status, scores, round banners |
+
+  Each painter gets its own copy of the `Graphics2D`, so colours and strokes don't leak between painters.

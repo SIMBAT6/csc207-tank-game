@@ -14,7 +14,8 @@ import java.beans.PropertyChangeListener;
 /**
  * Draws the score bar and the round-over banner on top of the game screen (UC5).
  * After a round (not the last one) it waits {@link #ROUND_DELAY_MS} and then starts the next round.
- * The game screen calls {@link #paint(Graphics2D, int, int)} at the end of its paintComponent.
+ * Register it on the game screen's OVERLAY layer:
+ * {@code gameView.addPainter(GameLayer.OVERLAY, g -> overlay.paint(g, GameView.WIDTH, GameView.HEIGHT))}.
  */
 public class RoundResultOverlay implements PropertyChangeListener {
     public static final int ROUND_DELAY_MS = 2500;
