@@ -1,4 +1,3 @@
-
 @startuml
 title UC1 — Log In / Sign Up | CSC207 Ricochet Tanks
 
@@ -7,6 +6,7 @@ skinparam linetype polyline
 
 class LoginView {
     - controller: LoginController
+    - viewModel: LoginViewModel
     --
     + showLoginForm(side: int): void
     + showError(message: String): void
@@ -22,77 +22,194 @@ class LoginController {
     + continueAsGuest(side: int): void
 }
 
+class LoginInputData <<record>> {
+    - username: String
+    - password: String
+    - side: int
+}
+
+class SignupInputData <<record>> {
+    - username: String
+    - password: String
+    - side: int
+}
+
+class GuestInputData <<record>> {
+    - side: int
+}
+
 interface LoginInputBoundary {
-    + login(name: String, password: String, side: int): void
-    + continueAsGuest(side: int): void
+    + execute(input: LoginInputData): void
+    + continueAsGuest(input: GuestInputData): void
 }
 
 interface SignupInputBoundary {
-    + signup(name: String, password: String, side: int): void
+    + execute(input: SignupInputData): void
 }
 
 class LoginInteractor {
     - users: UserDataAccessInterface
+    - currentPlayers: CurrentPlayerDataAccessInterface
     - presenter: LoginOutputBoundary
     --
-    + login(name: String, password: String, side: int): void
-    + continueAsGuest(side: int): void
+    + execute(input: LoginInputData): void
+    + continueAsGuest(input: GuestInputData): void
 }
 
 class SignupInteractor {
     - users: UserDataAccessInterface
+    - currentPlayers: CurrentPlayerDataAccessInterface
     - presenter: LoginOutputBoundary
     --
-    + signup(name: String, password: String, side: int): void
+    + execute(input: SignupInputData): void
 }
 
 interface UserDataAccessInterface {
-    + exists(name: String): boolean
-    + authenticate(name: String, password: String): boolean
-    + createUser(name: String, password: String): void
+    + findByUsername(username: String): Optional<UserAccount>
+    + createUser(username: String, password: String): void
 }
 
 class APIUserDataAccessObject {
-    + exists(name: String): boolean
-    + authenticate(name: String, password: String): boolean
-    + createUser(name: String, password: String): void
+    + findByUsername(username: String): Optional<UserAccount>
+    + createUser(username: String, password: String): void
+}
+
+class UserAccount <<record>> {
+    - username: String
+    - storedCredential: String
+    - wins: int
+    - losses: int
+}
+
+interface CurrentPlayerDataAccessInterface {
+    + save(side: int, player: Player): void
+    + findBySide(side: int): Optional<Player>
+}
+
+class InMemoryCurrentPlayerDataAccessObject {
+    - playersBySide: Map<Integer, Player>
+    --
+    + save(side: int, player: Player): void
+    + findBySide(side: int): Optional<Player>
+}
+
+class Player {
+    + Player(username: String, guest: boolean, wins: int, losses: int)
+    + getUsername(): String
+    + isGuest(): boolean
+    + getWins(): int
+    + getLosses(): int
+}
+
+class LoginOutputData <<record>> {
+    - username: String
+    - side: int
 }
 
 interface LoginOutputBoundary {
-    + prepareSuccess(name: String, side: int): void
+    + prepareSuccess(output: LoginOutputData): void
     + prepareFailure(message: String): void
 }
 
 class LoginPresenter {
     - viewModel: LoginViewModel
     --
-    + prepareSuccess(name: String, side: int): void
+    + prepareSuccess(output: LoginOutputData): void
     + prepareFailure(message: String): void
 }
 
-class LoginViewModel {
-    + player1Name: String
-    + player2Name: String
-    + errorMessage: String
+class "ViewModel<T>" as ViewModel {
+    + getState(): T
+    + setState(state: T): void
+    + firePropertyChanged(): void
+    + addPropertyChangeListener(listener: PropertyChangeListener): void
 }
 
-LoginView --> LoginController
+class LoginViewModel {
+    + LoginViewModel()
+}
 
+class LoginState {
+    - player1Name: String
+    - player2Name: String
+    - errorMessage: String
+    --
+    + getPlayerName(side: int): String
+    + setPlayerName(side: int, name: String): void
+    + getErrorMessage(): String
+    + setErrorMessage(message: String): void
+}
+
+class StartMatchInteractor <<UC2>> {
+    - currentPlayers: CurrentPlayerDataAccessInterface
+}
+
+class Match {
+    + Match(player1: Player, player2: Player, maze: Maze, tank1: Tank, tank2: Tank)
+}
+
+class AppBuilder
+
+LoginView --> LoginController
+LoginView --> LoginViewModel
 LoginController --> LoginInputBoundary
 LoginController --> SignupInputBoundary
+LoginController ..> LoginInputData : creates
+LoginController ..> SignupInputData : creates
+LoginController ..> GuestInputData : creates
+LoginInputBoundary ..> LoginInputData
+LoginInputBoundary ..> GuestInputData
+SignupInputBoundary ..> SignupInputData
 
 LoginInteractor ..|> LoginInputBoundary
 SignupInteractor ..|> SignupInputBoundary
-
 LoginInteractor --> UserDataAccessInterface
 SignupInteractor --> UserDataAccessInterface
-
+LoginInteractor --> CurrentPlayerDataAccessInterface
+SignupInteractor --> CurrentPlayerDataAccessInterface
+LoginInteractor ..> Player : creates
+SignupInteractor ..> Player : creates
 LoginInteractor --> LoginOutputBoundary
 SignupInteractor --> LoginOutputBoundary
 
 APIUserDataAccessObject ..|> UserDataAccessInterface
-LoginPresenter ..|> LoginOutputBoundary
+UserDataAccessInterface ..> UserAccount
+InMemoryCurrentPlayerDataAccessObject ..|> CurrentPlayerDataAccessInterface
+InMemoryCurrentPlayerDataAccessObject --> Player : stores by side
 
+LoginOutputBoundary ..> LoginOutputData
+LoginPresenter ..|> LoginOutputBoundary
 LoginPresenter --> LoginViewModel
+LoginViewModel --|> ViewModel : T = LoginState
+LoginViewModel --> LoginState
+
+AppBuilder --> "1" InMemoryCurrentPlayerDataAccessObject : shares instance
+AppBuilder ..> LoginInteractor : wires
+AppBuilder ..> SignupInteractor : wires
+AppBuilder ..> StartMatchInteractor : wires
+StartMatchInteractor --> CurrentPlayerDataAccessInterface
+StartMatchInteractor ..> Match : creates
+Match --> "2" Player
+
+note right of LoginInteractor
+    Retrieve the account by username and verify
+    the submitted password against its stored credential.
+    On success, create a Player with the account's stats,
+    save it for the requested side, then present success.
+    On failure, present the error and preserve the slot.
+    Guest selection saves a guest Player with zero stats.
+end note
+
+note right of SignupInteractor
+    Check username availability with findByUsername.
+    After account creation succeeds, save a new Player
+    with zero stats for the selected side, then present success.
+end note
+
+note right of StartMatchInteractor
+    Read sides 1 and 2 from the shared store.
+    Use a guest Player for each empty slot.
+    Pass both Players to the Match constructor.
+end note
 
 @enduml
