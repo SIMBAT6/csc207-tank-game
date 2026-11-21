@@ -9,6 +9,8 @@ public class Main {
             JFrame application = new AppBuilder()
                     .addMainMenuView()
                     .addGameView()
+                    .addLeaderboardView()
+                    .addViewLeaderboardUseCase()
                     .build();
             application.pack();
             application.setLocationRelativeTo(null);

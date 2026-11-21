@@ -105,14 +105,21 @@ round, the result is **recorded** to their account through an external API, and 
 **Main Flow:**
 1. A tank is destroyed during a round.
 2. The system awards a point to the surviving player and shows the updated scores.
-3. The system records the result (win/loss) to each logged-in player's account through the API.
+3. The system records the result (win/loss) for each logged-in player through the API.
 4. After a short delay, the system starts a new round (back to UC2 step 2).
-5. From the main menu, a player clicks **Leaderboard**; the system fetches all accounts' records and shows them ranked by wins.
+5. From the main menu, a player clicks **Leaderboard**; the system fetches all accounts' records and shows them ranked by wins
+   (ties: fewer losses first, then by username).
 
 **Alternative Flows:**
 - Both tanks are destroyed at the same time: the round is a draw and no point is awarded.
 - A player is a guest: their result is not recorded.
 - The API cannot be reached: scores still update on screen, and the system shows a warning that results were not saved.
+- A player reaches the wins needed for the match format (UC2's BO1/BO3/BO5): the system shows the match winner instead
+  of starting a new round; Esc returns to the main menu.
+- The leaderboard cannot be loaded: the leaderboard screen shows an error and a **Refresh** button.
+
+Design notes: [`docs/design/uc5-end-round-leaderboard.md`](docs/design/uc5-end-round-leaderboard.md) ·
+class diagram: [`docs/diagrams/uc5-end-round-leaderboard-class.puml`](docs/diagrams/uc5-end-round-leaderboard-class.puml)
 
 ### Post-MVP (if time permits)
 
@@ -152,8 +159,12 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 - Methods: `recordWin()`, `recordLoss()`
 
 **`Match`**
-- Variables: `player1`, `player2`, `tank1`, `tank2`, `maze`, `bullets`, `powerUps`, `score1`, `score2`, `roundOver`
-- Methods: `tick()`, `startRound()`, `endRound(winner)`
+- Variables: `player1`, `player2`, `tank1`, `tank2`, `maze`, `bullets`, `powerUps`, `score1`, `score2`, `roundOver`, `winsToWin`
+- Methods: `tick()`, `startRound()`, `endRound(winner)`, `isMatchOver()`, `getMatchWinner()`, `getPlayer(side)`
+
+**`Leaderboard`**
+- Variables: `ranking: List<Player>`
+- Methods: `getRanking()` (wins high to low, then fewer losses, then username)
 
 ---
 
@@ -161,12 +172,16 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 
 | API | Documentation | Status |
 |---|---|---|
-| CSC207 course user/password + info API (used by the `DBUserDataAccessObject` example) | TODO: add link from Quercus | ❌ Not yet called |
+| CSC207 course user/password + info API (`https://csc207-20269-vm.teach.cs.toronto.edu`, used by the `DBUserDataAccessObject` example) | [Postman docs](https://www.postman.com/cloudy-astronaut-813156/csc207-apis-2026/collection/puzltp3/5-password-protected-user) | ✅ Called (UC5: `GET /user`, `POST /user`, `PUT /modifyUserInfo`) |
 
 **How we use it:**
 - **Sign up / log in** (UC1): create a user with a username and password, and check credentials when logging in.
-- **Save results** (UC5): store a JSON object with each player's `wins` and `losses` in their user info.
-- **Leaderboard** (UC5): read players' stats and rank them by wins.
+- **Save results** (UC5): the API cannot list all users, so every player's `wins` and `losses` are stored in the info
+  JSON of one shared account, `ricochet-tanks-leaderboard`: `{"players": {"alice": {"wins": 3, "losses": 1}}}`.
+- **Leaderboard** (UC5): read that one account's info and rank the players by wins.
+- Results are counted **per round**: every round won adds 1 win, every round lost adds 1 loss (a BO3 won 2:1 gives the
+  winner 2 wins, 1 loss). Draws and guests are not recorded.
+- API calls for the leaderboard run on a background thread (`SwingWorker`) so the window doesn't freeze.
 
 This API satisfies both the **external API** and the **data persistence** requirements.
 
