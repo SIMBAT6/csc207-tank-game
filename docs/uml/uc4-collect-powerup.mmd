@@ -1,0 +1,157 @@
+---
+title: UC4 – Collect Power-Up (Ricochet Tanks)
+---
+classDiagram
+    direction TB
+
+    %% ===== Entities =====
+    class PowerUpType {
+        <<enumeration>>
+        SHOTGUN
+        LASER
+        SHIELD
+    }
+    class PowerUp {
+        <<abstract>>
+        +UNLIMITED_AMMO : int$
+        -x : double
+        -y : double
+        -duration : int
+        -type : PowerUpType
+        -ammo : int
+        +getX() double
+        +getY() double
+        +getDuration() int
+        +getType() PowerUpType
+        +getAmmo() int
+        +tick() void
+        +consumeAmmo() void
+        +isExpired() boolean
+        +getShotAngleOffsets()* double[]
+        +getBulletSpeedMultiplier() double
+        +providesShield() boolean
+    }
+    class ShotgunPowerUp {
+        +getShotAngleOffsets() double[]
+    }
+    class LaserPowerUp {
+        +getShotAngleOffsets() double[]
+        +getBulletSpeedMultiplier() double
+    }
+    class ShieldPowerUp {
+        +getShotAngleOffsets() double[]
+        +providesShield() boolean
+    }
+    class PowerUpFactory {
+        -random : Random
+        +create(type, x, y) PowerUp
+        +createRandom(x, y) PowerUp
+    }
+    class Tank {
+        -id : int
+        -x : double
+        -y : double
+        -powerUp : PowerUp
+        ...UC3 fields
+        +getX() double
+        +getY() double
+        +getPowerUp() PowerUp
+        +applyPowerUp(PowerUp) void
+        +clearPowerUp() void
+        +hasShield() boolean
+    }
+
+    %% ===== Use case =====
+    class CollectPowerUpInputBoundary {
+        <<interface>>
+        +execute(CollectPowerUpInputData) void
+    }
+    class CollectPowerUpInputData {
+        -tick : long
+        +getTick() long
+    }
+    class CollectPowerUpInteractor {
+        +SPAWN_INTERVAL_TICKS : int$
+        +MAX_POWERUPS_ON_MAP : int$
+        +PICKUP_RADIUS : double$
+        -gameState : CollectPowerUpDataAccessInterface
+        -presenter : CollectPowerUpOutputBoundary
+        -powerUpFactory : PowerUpFactory
+        -random : Random
+        +execute(CollectPowerUpInputData) void
+        -updateActivePowerUps() void
+        -trySpawnPowerUp() void
+        -checkCollection() int
+        -buildOutputData(int) CollectPowerUpOutputData
+    }
+    class CollectPowerUpDataAccessInterface {
+        <<interface>>
+        +getTanks() List~Tank~
+        +getPowerUpsOnMap() List~PowerUp~
+        +addPowerUp(PowerUp) void
+        +removePowerUp(PowerUp) void
+        +getEmptyCellCentres() List~double[]~
+    }
+    class CollectPowerUpOutputBoundary {
+        <<interface>>
+        +prepareSuccessView(CollectPowerUpOutputData) void
+    }
+    class CollectPowerUpOutputData {
+        -mapItems : List~MapItem~
+        -activePowerUps : List~String~
+        -remainingTicks : List~Integer~
+        -collectedByPlayer : int
+    }
+
+    %% ===== Interface adapters + view =====
+    class CollectPowerUpController {
+        -interactor : CollectPowerUpInputBoundary
+        +execute(long tick) void
+    }
+    class CollectPowerUpPresenter {
+        -viewModel : PowerUpViewModel
+        +prepareSuccessView(CollectPowerUpOutputData) void
+    }
+    class ViewModel~T~ {
+        team base class
+        +getState() T
+        +setState(T) void
+        +firePropertyChanged() void
+    }
+    class PowerUpViewModel {
+        +VIEW_NAME : String$
+        +PowerUpViewModel()
+    }
+    class PowerUpState {
+        -icons : List~Icon~
+        -hudLabels : List~String~
+    }
+    class PowerUpPainter {
+        +paint(Graphics2D, PowerUpState) void
+    }
+    class GameStateDataAccessObject {
+        shared in-memory game state
+    }
+
+    PowerUp <|-- ShotgunPowerUp
+    PowerUp <|-- LaserPowerUp
+    PowerUp <|-- ShieldPowerUp
+    PowerUp --> PowerUpType
+    PowerUpFactory ..> PowerUp : creates
+    Tank o-- PowerUp : holds 0..1
+
+    CollectPowerUpInputBoundary <|.. CollectPowerUpInteractor
+    CollectPowerUpOutputBoundary <|.. CollectPowerUpPresenter
+    CollectPowerUpDataAccessInterface <|.. GameStateDataAccessObject
+    CollectPowerUpInteractor --> CollectPowerUpDataAccessInterface
+    CollectPowerUpInteractor --> CollectPowerUpOutputBoundary
+    CollectPowerUpInteractor --> PowerUpFactory
+    CollectPowerUpInteractor ..> CollectPowerUpInputData
+    CollectPowerUpInteractor ..> CollectPowerUpOutputData
+    CollectPowerUpInteractor ..> Tank
+
+    CollectPowerUpController --> CollectPowerUpInputBoundary
+    CollectPowerUpPresenter --> PowerUpViewModel
+    ViewModel <|-- PowerUpViewModel
+    PowerUpViewModel --> PowerUpState
+    PowerUpPainter ..> PowerUpState

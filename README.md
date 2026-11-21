@@ -9,7 +9,7 @@ CSC207 Fall 2026 Final Project
 | TODO Member 1 | @TODO | UC1 – Log In / Sign Up |
 | TODO Member 2 | @TODO | UC2 – Start Match |
 | TODO Member 3 | @TODO | UC3 – Control Tank |
-| TODO Member 4 | @TODO | UC4 – Collect Power-Up |
+| Seojin Ahn | @ulsancitiboi | UC4 – Collect Power-Up |
 | TODO Member 5 | @TODO | UC5 – End Round & Leaderboard |
 
 > **Workflow:** `main` is protected. All work happens on feature branches and is merged through Pull Requests
@@ -88,7 +88,7 @@ round, the result is **recorded** to their account through an external API, and 
 - A bullet has bounced its maximum number of times or has expired: the system removes it.
 - A bullet hits a tank: the system destroys that tank and the round ends (continues in UC5).
 
-#### UC4: Collect Power-Up — *Lead: TODO Member 4*
+#### UC4: Collect Power-Up — *Lead: Seojin Ahn*
 **Main Flow:**
 1. During a round, the system periodically spawns a power-up at a random empty cell.
 2. A player drives their tank over the power-up.
