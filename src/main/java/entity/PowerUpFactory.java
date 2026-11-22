@@ -20,6 +20,10 @@ public class PowerUpFactory {
                 return new CannonPowerUp(x, y);
             case SHIELD:
                 return new ShieldPowerUp(x, y);
+            case SHRINK:
+                return new ShrinkPowerUp(x, y);
+            case LASER:
+                return new LaserPowerUp(x, y);
             default:
                 throw new IllegalArgumentException("Unknown power-up type: " + type);
         }

@@ -22,8 +22,9 @@ public class ShieldPowerUp extends PowerUp {
     }
 
     @Override
-    public void removeFrom(Tank tank) {
+    public boolean removeFrom(Tank tank, Maze maze) {
         tank.setShielded(false);
+        return true;
     }
 
     /** Also expired once the shield has absorbed a hit. */

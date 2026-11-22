@@ -106,7 +106,8 @@ round, the result is **recorded** to their account through an external API, and 
 - The power-up's duration runs out or its ammo is used: the tank returns to its normal weapon.
 - The maximum number of power-ups is already on the map: no new one spawns.
 
-**Power-ups:** Shotgun (5-bullet spread, 3 shots), Cannon (one shot that goes through walls), Shield (absorbs one hit).
+**Power-ups:** Shotgun (5-bullet spread), Cannon (goes through walls), Shield (absorbs one hit), Shrink (smaller tank for 5 s),
+Laser (beam that bounces across the maze in one tick, with a dashed aim line while held).
 
 Design notes: [`docs/design/uc4-collect-power-up.md`](docs/design/uc4-collect-power-up.md) ·
 class diagram: [`docs/diagrams/uc4-collect-power-up-class.puml`](docs/diagrams/uc4-collect-power-up-class.puml)
@@ -167,11 +168,13 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 - Variables: `x`, `y`, `width`, `height`
 - Methods: `intersectsCircle(x, y, radius)`
 
-**`PowerUp`** *(abstract; `ShotgunPowerUp`, `CannonPowerUp`, `ShieldPowerUp`, created by `PowerUpFactory`)*
+**`PowerUp`** *(abstract; `ShotgunPowerUp`, `CannonPowerUp`, `ShieldPowerUp`, `ShrinkPowerUp`, `LaserPowerUp`, created by `PowerUpFactory`)*
 - Variables: `x`, `y`, `duration`, `ammo`
-- Methods: `getType(): PowerUpType`, `applyTo(Tank)`, `removeFrom(Tank)`, `tick()`, `isExpired(Tank)`
-- `ShotgunPowerUp` and `CannonPowerUp` are also `Weapon`s (installed with `Tank.setWeapon`); `CannonPowerUp` fires a
-  `CannonBullet`, which overrides `hitsWall` to fly through walls. `ShieldPowerUp` uses `Tank.setShielded`.
+- Methods: `getType(): PowerUpType`, `applyTo(Tank)`, `removeFrom(Tank, Maze): boolean`, `tick()`, `isExpired(Tank)`,
+  `getAimPath(Tank, Maze)`
+- Shotgun, Cannon and Laser are also `Weapon`s (installed with `Tank.setWeapon`). `CannonPowerUp` fires a `CannonBullet`
+  (overrides `hitsWall`); `LaserPowerUp` fires a `LaserBeam` (moves its whole length in one tick, `getPath()` = bounce points).
+  Shield uses `Tank.setShielded`; Shrink uses `Tank.setRadius` / `tryResetRadius`.
 
 **`Player`**
 - Variables: `username`, `isGuest`, `wins`, `losses`

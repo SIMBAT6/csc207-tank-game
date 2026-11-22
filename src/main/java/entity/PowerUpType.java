@@ -6,5 +6,7 @@ package entity;
 public enum PowerUpType {
     SHOTGUN,
     CANNON,
-    SHIELD
+    SHIELD,
+    SHRINK,
+    LASER
 }

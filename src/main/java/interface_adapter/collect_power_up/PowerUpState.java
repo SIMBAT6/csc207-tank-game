@@ -34,6 +34,8 @@ public class PowerUpState {
     private List<Icon> icons = new ArrayList<>();
     /** Per player, e.g. "Shotgun (8s)" or "" when no power-up. */
     private List<String> hudLabels = new ArrayList<>();
+    /** Per player, the laser aim line's points {x, y}; empty when there is none. */
+    private List<List<double[]>> aimPaths = new ArrayList<>();
 
     public List<Icon> getIcons() {
         return new ArrayList<>(icons);
@@ -49,5 +51,13 @@ public class PowerUpState {
 
     public void setHudLabels(List<String> hudLabels) {
         this.hudLabels = new ArrayList<>(hudLabels);
+    }
+
+    public List<List<double[]>> getAimPaths() {
+        return new ArrayList<>(aimPaths);
+    }
+
+    public void setAimPaths(List<List<double[]>> aimPaths) {
+        this.aimPaths = new ArrayList<>(aimPaths);
     }
 }

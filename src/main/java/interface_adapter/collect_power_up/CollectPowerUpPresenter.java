@@ -31,6 +31,10 @@ public class CollectPowerUpPresenter implements CollectPowerUpOutputBoundary {
             if (active.get(i).isEmpty()) {
                 hud.add("");
             }
+            else if (remaining.get(i) <= 0) {
+                // e.g. a shrunk tank that is waiting for room to grow back
+                hud.add(prettyName(active.get(i)));
+            }
             else {
                 final int seconds = (remaining.get(i) + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
                 hud.add(prettyName(active.get(i)) + " (" + seconds + "s)");
@@ -40,6 +44,7 @@ public class CollectPowerUpPresenter implements CollectPowerUpOutputBoundary {
         final PowerUpState state = viewModel.getState();
         state.setIcons(icons);
         state.setHudLabels(hud);
+        state.setAimPaths(outputData.getAimPaths());
         viewModel.setState(state);
         viewModel.firePropertyChanged();
     }

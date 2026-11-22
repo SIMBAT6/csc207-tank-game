@@ -37,19 +37,23 @@ public class CollectPowerUpOutputData {
     private final List<MapItem> mapItems;
     private final List<String> activePowerUps;
     private final List<Integer> remainingTicks;
+    private final List<List<double[]>> aimPaths;
     private final int collectedByPlayer;
 
     /**
      * @param mapItems          power-ups currently on the map
      * @param activePowerUps    per player, the name of the held power-up or "" if none
      * @param remainingTicks    per player, ticks left on the held power-up (0 if none)
+     * @param aimPaths          per player, the laser aim line's points {x, y} (empty if none)
      * @param collectedByPlayer index of the player who picked one up this tick, or -1
      */
     public CollectPowerUpOutputData(List<MapItem> mapItems, List<String> activePowerUps,
-                                    List<Integer> remainingTicks, int collectedByPlayer) {
+                                    List<Integer> remainingTicks, List<List<double[]>> aimPaths,
+                                    int collectedByPlayer) {
         this.mapItems = new ArrayList<>(mapItems);
         this.activePowerUps = new ArrayList<>(activePowerUps);
         this.remainingTicks = new ArrayList<>(remainingTicks);
+        this.aimPaths = new ArrayList<>(aimPaths);
         this.collectedByPlayer = collectedByPlayer;
     }
 
@@ -63,6 +67,10 @@ public class CollectPowerUpOutputData {
 
     public List<Integer> getRemainingTicks() {
         return new ArrayList<>(remainingTicks);
+    }
+
+    public List<List<double[]>> getAimPaths() {
+        return new ArrayList<>(aimPaths);
     }
 
     public int getCollectedByPlayer() {

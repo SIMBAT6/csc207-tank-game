@@ -24,8 +24,9 @@ public class CannonPowerUp extends PowerUp implements Weapon {
     }
 
     @Override
-    public void removeFrom(Tank tank) {
+    public boolean removeFrom(Tank tank, Maze maze) {
         tank.setWeapon(new StandardWeapon());
+        return true;
     }
 
     @Override

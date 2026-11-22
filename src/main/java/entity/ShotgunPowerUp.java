@@ -28,8 +28,9 @@ public class ShotgunPowerUp extends PowerUp implements Weapon {
     }
 
     @Override
-    public void removeFrom(Tank tank) {
+    public boolean removeFrom(Tank tank, Maze maze) {
         tank.setWeapon(new StandardWeapon());
+        return true;
     }
 
     /** Five bullets at -30, -15, 0, 15 and 30 degrees around the tank's facing direction. */

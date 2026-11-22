@@ -2,6 +2,7 @@ package use_case.collect_power_up;
 
 import data_access.InMemoryPowerUpDataAccessObject;
 import entity.CannonPowerUp;
+import entity.LaserPowerUp;
 import entity.Match;
 import entity.Maze;
 import entity.Player;
@@ -9,8 +10,10 @@ import entity.PowerUp;
 import entity.PowerUpFactory;
 import entity.ShieldPowerUp;
 import entity.ShotgunPowerUp;
+import entity.ShrinkPowerUp;
 import entity.StandardWeapon;
 import entity.Tank;
+import entity.Wall;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +21,7 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -127,5 +131,48 @@ class CollectPowerUpInteractorTest {
         gameState.setCurrentMatch(null);
         tick(CollectPowerUpInteractor.SPAWN_INTERVAL);
         assertTrue(lastOutput.getMapItems().isEmpty());
+    }
+
+    @Test
+    void expiredShrinkGrowsBackInOpenSpace() {
+        match.getPowerUps().add(new ShrinkPowerUp(30, 30));
+        tick(1);
+        assertEquals(ShrinkPowerUp.SHRUNK_RADIUS, tank1.getRadius());
+
+        for (int t = 2; t <= ShrinkPowerUp.DURATION + 1; t++) {
+            tick(t);
+        }
+
+        assertNull(gameState.getActivePowerUp(tank1));
+        assertEquals(Tank.DEFAULT_RADIUS, tank1.getRadius());
+    }
+
+    @Test
+    void expiredShrinkWaitsWhileAWallIsTooClose() {
+        // Wall 12 px to the right of tank 1: room for the shrunk tank, not the full-size one.
+        Tank small = new Tank(1, 108, 100, 0);
+        Match tight = new Match(new Player("a", false, 0, 0), new Player("b", false, 0, 0),
+                new Maze(10, 10, 50, List.of(new Wall(120, 0, 6, 500))), small, tank2);
+        gameState.setCurrentMatch(tight);
+        ShrinkPowerUp shrink = new ShrinkPowerUp(0, 0);
+        shrink.applyTo(small);
+        gameState.setActivePowerUp(small, shrink);
+
+        for (int t = 1; t <= ShrinkPowerUp.DURATION + 10; t++) {
+            tick(t);
+        }
+
+        assertSame(shrink, gameState.getActivePowerUp(small), "kept until there is room");
+        assertEquals(ShrinkPowerUp.SHRUNK_RADIUS, small.getRadius());
+        assertEquals("SHRINK", lastOutput.getActivePowerUps().get(0));
+    }
+
+    @Test
+    void holdingALaserSendsAnAimLine() {
+        match.getPowerUps().add(new LaserPowerUp(30, 30));
+        tick(1);
+
+        assertFalse(lastOutput.getAimPaths().get(0).isEmpty(), "player 1 has an aim line");
+        assertTrue(lastOutput.getAimPaths().get(1).isEmpty(), "player 2 has none");
     }
 }
