@@ -1,0 +1,131 @@
+package use_case.collect_power_up;
+
+import data_access.InMemoryPowerUpDataAccessObject;
+import entity.CannonPowerUp;
+import entity.Match;
+import entity.Maze;
+import entity.Player;
+import entity.PowerUp;
+import entity.PowerUpFactory;
+import entity.ShieldPowerUp;
+import entity.ShotgunPowerUp;
+import entity.StandardWeapon;
+import entity.Tank;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class CollectPowerUpInteractorTest {
+    private InMemoryPowerUpDataAccessObject gameState;
+    private Match match;
+    private Tank tank1;
+    private Tank tank2;
+    private CollectPowerUpOutputData lastOutput;
+    private CollectPowerUpInteractor interactor;
+
+    @BeforeEach
+    void setUp() {
+        tank1 = new Tank(1, 25, 25, 0);
+        tank2 = new Tank(2, 475, 475, 0);
+        match = new Match(new Player("a", false, 0, 0), new Player("b", false, 0, 0), new Maze(10, 10, 50, List.of()), tank1, tank2);
+        gameState = new InMemoryPowerUpDataAccessObject();
+        gameState.setCurrentMatch(match);
+        Random random = new Random(42);
+        interactor = new CollectPowerUpInteractor(gameState, output -> lastOutput = output,
+                new PowerUpFactory(random), random);
+    }
+
+    private void tick(long tick) {
+        interactor.execute(new CollectPowerUpInputData(tick));
+    }
+
+    @Test
+    void spawnsOnePowerUpOnSpawnTick() {
+        tick(CollectPowerUpInteractor.SPAWN_INTERVAL);
+        assertEquals(1, match.getPowerUps().size());
+        assertEquals(1, lastOutput.getMapItems().size());
+    }
+
+    @Test
+    void doesNotSpawnOnOtherTicks() {
+        tick(1);
+        assertTrue(match.getPowerUps().isEmpty());
+    }
+
+    @Test
+    void doesNotSpawnWhenMapIsFull() {
+        for (int i = 0; i < CollectPowerUpInteractor.MAX_POWER_UPS_ON_MAP; i++) {
+            match.getPowerUps().add(new ShieldPowerUp(125 + i * 100, 275));
+        }
+        tick(CollectPowerUpInteractor.SPAWN_INTERVAL);
+        assertEquals(CollectPowerUpInteractor.MAX_POWER_UPS_ON_MAP, match.getPowerUps().size());
+    }
+
+    @Test
+    void neverSpawnsNextToATank() {
+        for (int i = 1; i <= 3; i++) {
+            tick((long) i * CollectPowerUpInteractor.SPAWN_INTERVAL);
+        }
+        for (PowerUp p : match.getPowerUps()) {
+            assertTrue(Math.hypot(p.getX() - tank1.getX(), p.getY() - tank1.getY())
+                    >= CollectPowerUpInteractor.MIN_SPAWN_DISTANCE);
+        }
+    }
+
+    @Test
+    void tankDrivingOverPowerUpCollectsIt() {
+        PowerUp shotgun = new ShotgunPowerUp(30, 30);
+        match.getPowerUps().add(shotgun);
+
+        tick(1);
+
+        assertTrue(match.getPowerUps().isEmpty());
+        assertSame(shotgun, gameState.getActivePowerUp(tank1));
+        assertSame(shotgun, tank1.getWeapon());
+        assertEquals(0, lastOutput.getCollectedByPlayer());
+        assertEquals("SHOTGUN", lastOutput.getActivePowerUps().get(0));
+        assertEquals("", lastOutput.getActivePowerUps().get(1));
+    }
+
+    @Test
+    void newPowerUpReplacesHeldOne() {
+        match.getPowerUps().add(new ShieldPowerUp(30, 30));
+        tick(1);
+        assertTrue(tank1.isShielded());
+
+        PowerUp cannon = new CannonPowerUp(30, 30);
+        match.getPowerUps().add(cannon);
+        tick(2);
+
+        assertSame(cannon, gameState.getActivePowerUp(tank1));
+        assertSame(cannon, tank1.getWeapon());
+        assertTrue(!tank1.isShielded(), "the old shield is removed");
+    }
+
+    @Test
+    void usedUpPowerUpGivesBackStandardWeapon() {
+        match.getPowerUps().add(new CannonPowerUp(30, 30));
+        tick(1);
+        tank1.fire();
+        tick(2);
+
+        assertNull(gameState.getActivePowerUp(tank1));
+        assertInstanceOf(StandardWeapon.class, tank1.getWeapon());
+        assertEquals("", lastOutput.getActivePowerUps().get(0));
+    }
+
+    @Test
+    void doesNothingBeforeAMatchStarts() {
+        gameState.setCurrentMatch(null);
+        tick(CollectPowerUpInteractor.SPAWN_INTERVAL);
+        assertTrue(lastOutput.getMapItems().isEmpty());
+    }
+}
