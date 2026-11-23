@@ -9,7 +9,7 @@ CSC207 Fall 2026 Final Project
 | TODO Member 1 | @christy80116002-star | UC1 – Log In / Sign Up | Login screen, saved accounts, the current players for each side (`CurrentPlayerDataAccessInterface`) |
 | Weibo Yu | @asxyr | UC2 – Start Match | Maps and maze generation, spawn points, the current match store (`InMemoryMatchDataAccessObject`), drawing walls (`MAZE` layer) |
 | TODO Member 3 | @SIMBAT6 | UC3 – Control Tank | Game loop and game screen framework (`GameView`, layers), tank and bullet rules, power-up hooks on `Tank`/`Bullet` |
-| TODO Member 4 | @ulsancitiboi | UC4 – Collect Power-Up | Power-up types and spawning, drawing power-ups and aim lines (`ITEMS` layer), power-up status (`OVERLAY` layer) |
+| Seojin Ahn | @ulsancitiboi | UC4 – Collect Power-Up | Power-up types and spawning, drawing power-ups and aim lines (`ITEMS` layer), power-up status (`OVERLAY` layer) |
 | TODO Member 5 | @Edev-cmd | UC5 – End Round & Leaderboard | Course API access (`DBPlayerStatsDataAccessObject`), scores and round result overlay, leaderboard screen |
 
 > **Workflow:** `main` is protected. All work happens on feature branches and is merged through Pull Requests
@@ -93,7 +93,7 @@ round, the result is **recorded** to their account through an external API, and 
 - A bullet bounces back to the tank that fired it: that tank is hit too.
 - Both tanks are destroyed on the same tick: the round is a draw (continues in UC5).
 
-#### UC4: Collect Power-Up — *Lead: TODO Member 4*
+#### UC4: Collect Power-Up — *Lead: Seojin Ahn*
 **Main Flow:**
 1. During a round, the system periodically spawns a power-up at a random empty cell.
 2. A player drives their tank over the power-up.
@@ -105,6 +105,12 @@ round, the result is **recorded** to their account through an external API, and 
 - The tank already holds a power-up: the new one replaces it.
 - The power-up's duration runs out or its ammo is used: the tank returns to its normal weapon.
 - The maximum number of power-ups is already on the map: no new one spawns.
+
+**Power-ups:** Shotgun (5-bullet spread), Cannon (goes through walls), Shield (absorbs one hit), Shrink (smaller tank for 5 s),
+Laser (beam that bounces across the maze in one tick, with a dashed aim line while held).
+
+Design notes: [`docs/design/uc4-collect-power-up.md`](docs/design/uc4-collect-power-up.md) ·
+class diagram: [`docs/diagrams/uc4-collect-power-up-class.puml`](docs/diagrams/uc4-collect-power-up-class.puml)
 
 #### UC5: End Round & View Leaderboard — *Lead: TODO Member 5*
 **Main Flow:**
@@ -162,9 +168,13 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 - Variables: `x`, `y`, `width`, `height`
 - Methods: `intersectsCircle(x, y, radius)`
 
-**`PowerUp`** *(abstract; e.g. `ShotgunPowerUp`, `LaserPowerUp`, `ShieldPowerUp`)*
-- Variables: `x`, `y`, `type`, `duration`
-- Methods: `fire(Tank): List<Bullet>`, `isExpired()`
+**`PowerUp`** *(abstract; `ShotgunPowerUp`, `CannonPowerUp`, `ShieldPowerUp`, `ShrinkPowerUp`, `LaserPowerUp`, created by `PowerUpFactory`)*
+- Variables: `x`, `y`, `duration`, `ammo`
+- Methods: `getType(): PowerUpType`, `applyTo(Tank)`, `removeFrom(Tank, Maze): boolean`, `tick()`, `isExpired(Tank)`,
+  `getAimPath(Tank, Maze)`
+- Shotgun, Cannon and Laser are also `Weapon`s (installed with `Tank.setWeapon`). `CannonPowerUp` fires a `CannonBullet`
+  (overrides `hitsWall`); `LaserPowerUp` fires a `LaserBeam` (moves its whole length in one tick, `getPath()` = bounce points).
+  Shield uses `Tank.setShielded`; Shrink uses `Tank.setRadius` / `tryResetRadius`.
 
 **`Player`**
 - Variables: `username`, `isGuest`, `wins`, `losses`
