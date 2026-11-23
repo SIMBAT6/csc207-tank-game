@@ -17,8 +17,8 @@ scoring, saving results and starting the next round (UC5), drawing walls (UC2).
 |---|---|---|
 | Entity rules and power-up hooks: `Tank`, `Bullet`, `Weapon`, `StandardWeapon`, `Maze`/`Wall` collision | #8 | ✅ merged |
 | Game screen framework: `GameView` tick actions and layered painters | #9 | ✅ merged |
-| Use case: input/output data, boundaries, data access interface, `ControlTankInteractor` | PR 2 | ⏳ next |
-| Adapters and view: `KeyBindings`, controller, presenter, view model, `ControlTankPainter`, wiring in `AppBuilder` | PR 3 | ⏳ |
+| Use case: input/output data, boundaries, data access interface, `ControlTankInteractor` | PR 2 | ✅ this PR |
+| Adapters and view: `KeyBindings`, controller, presenter, view model, `ControlTankPainter`, wiring in `AppBuilder` | PR 3 | ⏳ next |
 
 ## Key decisions
 
@@ -107,13 +107,14 @@ to UC2.
 - ✅ `BulletTest` (16): moving, bounces (vertical, horizontal, corner), lifetime, leaving the maze, hit reach,
   arming distance, subclass hooks.
 - ✅ `WallTest` (5), `MazeTest` (6), `GameViewTest` (5).
-- ⏳ `ControlTankInteractorTest`, with a fake data access object and a recording presenter:
+- ✅ `ControlTankInteractorTest` (17), with a fake data access object and a recording presenter:
   - a tank moves and turns on its command;
   - firing respects the cooldown and the bullet limit;
   - a bullet with several steps per tick is checked for hits after every step;
   - a hit destroys a tank and removes the bullet;
   - a shield absorbs one hit;
   - one tank destroyed means the other wins, both destroyed on the same tick means a draw;
-  - nothing happens after the round is over.
+  - UC4's cannon ball flies through a wall, and UC4's laser beam hits in one tick and stops at the tank;
+  - nothing happens before a match starts or after the round is over.
 - ⏳ `KeyBindingsTest`: pressed keys become the right command, and opposite keys cancel out.
 - ⏳ `ControlTankPresenterTest`: output data becomes view model state.
