@@ -1,3 +1,10 @@
+import interface_adapter.start_match.StartMatchController;
+import use_case.start_match.MatchFormat;
+import use_case.start_match.PresetMaps;
+
+import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
+import java.util.List;
 package view;
 
 import javax.swing.BorderFactory;
@@ -58,5 +65,62 @@ public class MainMenuView extends JPanel {
     /** TODO (UC2 lead): replace with a call to the StartMatchController. */
     public void setStartAction(Runnable action) {
         startButton.addActionListener(e -> action.run());
+    }
+    public void setStartMatchController(StartMatchController controller) {
+        List<String> mapIds = PresetMaps.getMapIds();
+        String[] choices = new String[mapIds.size() + 1];
+
+        for (int index = 0; index < mapIds.size(); index++) {
+            choices[index] = displayName(mapIds.get(index));
+        }
+        choices[mapIds.size()] = "Random";
+
+        JComboBox<String> maps = new JComboBox<>(choices);
+        JComboBox<MatchFormat> formats = new JComboBox<>(MatchFormat.values());
+
+        JPanel selections = new JPanel();
+
+        JLabel mapLabel = new JLabel("Map");
+        mapLabel.setLabelFor(maps);
+        selections.add(mapLabel);
+        selections.add(maps);
+
+        JLabel formatLabel = new JLabel("Format");
+        formatLabel.setLabelFor(formats);
+        selections.add(formatLabel);
+        selections.add(formats);
+
+        selections.setAlignmentX(Component.CENTER_ALIGNMENT);
+        add(selections, getComponentZOrder(startButton));
+
+        startButton.addActionListener(event -> {
+            int index = maps.getSelectedIndex();
+            String mapId = null;
+
+            if (index == mapIds.size()) {
+                mapId = PresetMaps.RANDOM;
+            } else if (index >= 0) {
+                mapId = mapIds.get(index);
+            }
+
+            controller.startMatch(mapId, (MatchFormat) formats.getSelectedItem());
+        });
+    }
+
+    private static String displayName(String mapId) {
+        StringBuilder name = new StringBuilder();
+        for (String word : mapId.split("-")) {
+            if (name.length() > 0) {
+                name.append(' ');
+            }
+            name.append(Character.toUpperCase(word.charAt(0)))
+                    .append(word.substring(1));
+        }
+        return name.toString();
+    }
+
+    public void showStartError(String message) {
+        JOptionPane.showMessageDialog(
+                this, message, "Cannot start match", JOptionPane.ERROR_MESSAGE);
     }
 }
