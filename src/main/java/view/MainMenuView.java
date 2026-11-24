@@ -62,10 +62,6 @@ public class MainMenuView extends JPanel {
         logInButton.addActionListener(event -> action.run());
     }
 
-    /** TODO (UC2 lead): replace with a call to the StartMatchController. */
-    public void setStartAction(Runnable action) {
-        startButton.addActionListener(e -> action.run());
-    }
     public void setStartMatchController(StartMatchController controller) {
         List<String> mapIds = PresetMaps.getMapIds();
         String[] choices = new String[mapIds.size() + 1];

@@ -19,6 +19,12 @@ import view.LeaderboardView;
 import view.LoginView;
 import view.MainMenuView;
 import view.ViewManager;
+import entity.Match;
+import interface_adapter.start_match.StartMatchController;
+import interface_adapter.start_match.StartMatchPresenter;
+import use_case.start_match.StartMatchInteractor;
+import view.MazePainter;
+import data_access.InMemoryMatchDataAccessObject;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -56,6 +62,8 @@ public class AppBuilder {
     private GameView gameView;
     private LeaderboardViewModel leaderboardViewModel;
     private LeaderboardView leaderboardView;
+    private final InMemoryMatchDataAccessObject matchDataAccessObject =
+            new InMemoryMatchDataAccessObject();
 
     public AppBuilder() {
         cardPanel.setLayout(cardLayout);
@@ -119,12 +127,10 @@ public class AppBuilder {
     public JFrame build() {
         wireLogin();
         // Placeholder navigation until the Start Match use case (UC2) exists.
-        mainMenuView.setStartAction(() -> {
-            switchTo(GameView.VIEW_NAME);
-            gameView.start();
-        });
+        wireStartMatch();
         gameView.setBackAction(() -> {
             gameView.stop();
+            matchDataAccessObject.setCurrentMatch(null);
             switchTo(MainMenuView.VIEW_NAME);
         });
         gameView.addPainter(GameLayer.OVERLAY,
@@ -137,6 +143,26 @@ public class AppBuilder {
 
         switchTo(MainMenuView.VIEW_NAME);
         return application;
+    }
+
+    private void wireStartMatch() {
+        StartMatchPresenter presenter = new StartMatchPresenter(match -> {
+            matchDataAccessObject.setCurrentMatch(match);
+            switchTo(GameView.VIEW_NAME);
+            gameView.start();
+        }, mainMenuView::showStartError);
+
+        StartMatchInteractor interactor =
+                new StartMatchInteractor(currentPlayers, presenter);
+        mainMenuView.setStartMatchController(new StartMatchController(interactor));
+
+        MazePainter painter = new MazePainter();
+        gameView.addPainter(GameLayer.MAZE, graphics -> {
+            Match match = matchDataAccessObject.getCurrentMatch();
+            if (match != null) {
+                painter.paint(graphics, match.getMaze());
+            }
+        });
     }
 
     private void switchTo(String viewName) {
