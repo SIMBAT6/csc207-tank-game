@@ -3,7 +3,6 @@ package app;
 import data_access.DBPlayerStatsDataAccessObject;
 import data_access.FileUserDataAccessObject;
 import data_access.InMemoryCurrentPlayerDataAccessObject;
-import data_access.InMemoryPowerUpDataAccessObject;
 import entity.PowerUpFactory;
 import interface_adapter.ViewManagerModel;
 import interface_adapter.collect_power_up.CollectPowerUpController;
@@ -26,6 +25,12 @@ import view.LoginView;
 import view.MainMenuView;
 import view.PowerUpPainter;
 import view.ViewManager;
+import entity.Match;
+import interface_adapter.start_match.StartMatchController;
+import interface_adapter.start_match.StartMatchPresenter;
+import use_case.start_match.StartMatchInteractor;
+import view.MazePainter;
+import data_access.InMemoryMatchDataAccessObject;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -59,9 +64,9 @@ public class AppBuilder {
 
     private final CurrentPlayerDataAccessInterface currentPlayers =
             new InMemoryCurrentPlayerDataAccessObject();
-    /** Start Match (UC2) calls setCurrentMatch(match) on this when a match starts. */
-    private final InMemoryPowerUpDataAccessObject powerUpDataAccessObject =
-            new InMemoryPowerUpDataAccessObject();
+    /** The one current match, shared by Start Match (UC2), Collect Power-Up (UC4) and End Round (UC5). */
+    private final InMemoryMatchDataAccessObject matchDataAccessObject =
+            new InMemoryMatchDataAccessObject();
 
     private MainMenuView mainMenuView;
     private GameView gameView;
@@ -126,7 +131,7 @@ public class AppBuilder {
         final Random random = new Random();
         final PowerUpViewModel viewModel = new PowerUpViewModel();
         final CollectPowerUpController controller = new CollectPowerUpController(
-                new CollectPowerUpInteractor(powerUpDataAccessObject,
+                new CollectPowerUpInteractor(matchDataAccessObject,
                         new CollectPowerUpPresenter(viewModel), new PowerUpFactory(random), random));
         final PowerUpPainter painter = new PowerUpPainter(viewModel);
         gameView.addTickAction(() -> controller.execute(gameView.getTickCount()));
@@ -144,12 +149,10 @@ public class AppBuilder {
     public JFrame build() {
         wireLogin();
         // Placeholder navigation until the Start Match use case (UC2) exists.
-        mainMenuView.setStartAction(() -> {
-            switchTo(GameView.VIEW_NAME);
-            gameView.start();
-        });
+        wireStartMatch();
         gameView.setBackAction(() -> {
             gameView.stop();
+            matchDataAccessObject.setCurrentMatch(null);
             switchTo(MainMenuView.VIEW_NAME);
         });
         gameView.addPainter(GameLayer.OVERLAY,
@@ -162,6 +165,26 @@ public class AppBuilder {
 
         switchTo(MainMenuView.VIEW_NAME);
         return application;
+    }
+
+    private void wireStartMatch() {
+        StartMatchPresenter presenter = new StartMatchPresenter(match -> {
+            matchDataAccessObject.setCurrentMatch(match);
+            switchTo(GameView.VIEW_NAME);
+            gameView.start();
+        }, mainMenuView::showStartError);
+
+        StartMatchInteractor interactor =
+                new StartMatchInteractor(currentPlayers, presenter);
+        mainMenuView.setStartMatchController(new StartMatchController(interactor));
+
+        MazePainter painter = new MazePainter();
+        gameView.addPainter(GameLayer.MAZE, graphics -> {
+            Match match = matchDataAccessObject.getCurrentMatch();
+            if (match != null) {
+                painter.paint(graphics, match.getMaze());
+            }
+        });
     }
 
     private void switchTo(String viewName) {
