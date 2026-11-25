@@ -1,20 +1,20 @@
+package view;
+
 import interface_adapter.start_match.StartMatchController;
 import use_case.start_match.MatchFormat;
 import use_case.start_match.PresetMaps;
-
-import javax.swing.JComboBox;
-import javax.swing.JOptionPane;
-import java.util.List;
-package view;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import java.awt.Component;
 import java.awt.Font;
+import java.util.List;
 
 /**
  * The main menu and current player names.
