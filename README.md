@@ -182,7 +182,7 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 
 **`Match`**
 - Variables: `player1`, `player2`, `tank1`, `tank2`, `maze`, `bullets`, `powerUps`, `score1`, `score2`, `roundOver`, `winsToWin`
-- Methods: `tick()`, `startRound()`, `endRound(winner)`, `isMatchOver()`, `getMatchWinner()`, `getPlayer(side)`
+- Methods: `startRound()`, `endRound(winner)`, `isMatchOver()`, `getMatchWinner()`, `getPlayer(side)`
 
 **`Leaderboard`**
 - Variables: `ranking: List<Player>`

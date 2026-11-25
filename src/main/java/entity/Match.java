@@ -5,7 +5,8 @@ import java.util.List;
 
 /**
  * A local two-player match: the maze, both tanks, and everything currently on the field.
- * TODO (UC2 lead): startRound().  TODO (UC3 lead): tick().
+ * A game tick is run by Control Tank (UC3) and Collect Power-Up (UC4), not by the match itself.
+ * TODO (UC2 lead): startRound().
  */
 public class Match {
     /** Round winner: player 1's tank survived. */
