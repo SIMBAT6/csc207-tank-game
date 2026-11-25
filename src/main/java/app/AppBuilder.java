@@ -3,7 +3,6 @@ package app;
 import data_access.DBPlayerStatsDataAccessObject;
 import data_access.FileUserDataAccessObject;
 import data_access.InMemoryCurrentPlayerDataAccessObject;
-import data_access.InMemoryPowerUpDataAccessObject;
 import entity.PowerUpFactory;
 import interface_adapter.ViewManagerModel;
 import interface_adapter.collect_power_up.CollectPowerUpController;
@@ -65,16 +64,14 @@ public class AppBuilder {
 
     private final CurrentPlayerDataAccessInterface currentPlayers =
             new InMemoryCurrentPlayerDataAccessObject();
-    /** Start Match (UC2) calls setCurrentMatch(match) on this when a match starts. */
-    private final InMemoryPowerUpDataAccessObject powerUpDataAccessObject =
-            new InMemoryPowerUpDataAccessObject();
+    /** The one current match, shared by Start Match (UC2), Collect Power-Up (UC4) and End Round (UC5). */
+    private final InMemoryMatchDataAccessObject matchDataAccessObject =
+            new InMemoryMatchDataAccessObject();
 
     private MainMenuView mainMenuView;
     private GameView gameView;
     private LeaderboardViewModel leaderboardViewModel;
     private LeaderboardView leaderboardView;
-    private final InMemoryMatchDataAccessObject matchDataAccessObject =
-            new InMemoryMatchDataAccessObject();
 
     public AppBuilder() {
         cardPanel.setLayout(cardLayout);
@@ -134,7 +131,7 @@ public class AppBuilder {
         final Random random = new Random();
         final PowerUpViewModel viewModel = new PowerUpViewModel();
         final CollectPowerUpController controller = new CollectPowerUpController(
-                new CollectPowerUpInteractor(powerUpDataAccessObject,
+                new CollectPowerUpInteractor(matchDataAccessObject,
                         new CollectPowerUpPresenter(viewModel), new PowerUpFactory(random), random));
         final PowerUpPainter painter = new PowerUpPainter(viewModel);
         gameView.addTickAction(() -> controller.execute(gameView.getTickCount()));
