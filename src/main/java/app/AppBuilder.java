@@ -3,13 +3,19 @@ package app;
 import data_access.DBPlayerStatsDataAccessObject;
 import data_access.FileUserDataAccessObject;
 import data_access.InMemoryCurrentPlayerDataAccessObject;
+import data_access.InMemoryPowerUpDataAccessObject;
+import entity.PowerUpFactory;
 import interface_adapter.ViewManagerModel;
+import interface_adapter.collect_power_up.CollectPowerUpController;
+import interface_adapter.collect_power_up.CollectPowerUpPresenter;
+import interface_adapter.collect_power_up.PowerUpViewModel;
 import interface_adapter.login.LoginController;
 import interface_adapter.login.LoginPresenter;
 import interface_adapter.login.LoginViewModel;
 import interface_adapter.view_leaderboard.LeaderboardViewModel;
 import interface_adapter.view_leaderboard.ViewLeaderboardController;
 import interface_adapter.view_leaderboard.ViewLeaderboardPresenter;
+import use_case.collect_power_up.CollectPowerUpInteractor;
 import use_case.login.LoginInteractor;
 import use_case.session.CurrentPlayerDataAccessInterface;
 import use_case.view_leaderboard.ViewLeaderboardInteractor;
@@ -18,6 +24,7 @@ import view.GameView;
 import view.LeaderboardView;
 import view.LoginView;
 import view.MainMenuView;
+import view.PowerUpPainter;
 import view.ViewManager;
 import entity.Match;
 import interface_adapter.start_match.StartMatchController;
@@ -30,6 +37,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.CardLayout;
 import java.nio.file.Path;
+import java.util.Random;
 
 /**
  * Builds the application: creates each view and wires it to its use case.
@@ -57,6 +65,9 @@ public class AppBuilder {
 
     private final CurrentPlayerDataAccessInterface currentPlayers =
             new InMemoryCurrentPlayerDataAccessObject();
+    /** Start Match (UC2) calls setCurrentMatch(match) on this when a match starts. */
+    private final InMemoryPowerUpDataAccessObject powerUpDataAccessObject =
+            new InMemoryPowerUpDataAccessObject();
 
     private MainMenuView mainMenuView;
     private GameView gameView;
@@ -115,6 +126,20 @@ public class AppBuilder {
             switchTo(LeaderboardView.VIEW_NAME);
             leaderboardView.load();
         });
+        return this;
+    }
+
+    /** Collect Power-Up (UC4): runs every tick after Control Tank (UC3); call after addGameView(). */
+    public AppBuilder addCollectPowerUpUseCase() {
+        final Random random = new Random();
+        final PowerUpViewModel viewModel = new PowerUpViewModel();
+        final CollectPowerUpController controller = new CollectPowerUpController(
+                new CollectPowerUpInteractor(powerUpDataAccessObject,
+                        new CollectPowerUpPresenter(viewModel), new PowerUpFactory(random), random));
+        final PowerUpPainter painter = new PowerUpPainter(viewModel);
+        gameView.addTickAction(() -> controller.execute(gameView.getTickCount()));
+        gameView.addPainter(GameLayer.ITEMS, painter::paintItems);
+        gameView.addPainter(GameLayer.OVERLAY, painter::paintStatus);
         return this;
     }
 

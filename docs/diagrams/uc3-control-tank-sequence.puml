@@ -1,0 +1,73 @@
+@startuml uc3-control-tank-sequence
+title UC3 Control Tank - One Game Tick
+
+actor Player
+participant "Swing Timer" as Timer
+participant GameView
+participant ControlTankController as Controller
+participant ControlTankInteractor as Interactor
+participant "ControlTankDataAccessInterface" as DAO
+participant Match
+participant Tank
+participant Bullet
+participant ControlTankPresenter as Presenter
+participant ControlTankViewModel as ViewModel
+participant "AppBuilder listener" as Wiring
+participant "EndRoundController (UC5)" as EndRound
+
+Player -> GameView : hold / release keys
+note right of GameView : keyPressed / keyReleased\nupdate pressedKeys
+
+Timer -> GameView : tick (every 16 ms)
+GameView -> Controller : execute(getPressedKeys())\n(UC3's tick action, runs before UC4's)
+Controller -> Controller : player1Keys.toCommand(keys)\nplayer2Keys.toCommand(keys)
+Controller -> Interactor : execute(ControlTankInputData)
+Interactor -> DAO : getCurrentMatch()
+DAO --> Interactor : match
+note right of Interactor : skip the tick if there is\nno match or it is round over
+
+loop tank 1, tank 2
+  Interactor -> Tank : rotate(turn)
+  Interactor -> Tank : drive(drive, maze)
+  note right of Tank : slides along walls\nif the full step is blocked
+  Interactor -> Tank : coolDown()
+  opt fire && canFire(activeBullets)
+    Interactor -> Tank : fire()
+    Tank --> Interactor : bullets from its Weapon\n(start at the tank centre)
+    Interactor -> Match : getBullets().addAll(bullets)
+  end
+end
+
+loop each bullet
+  loop getStepsPerTick() times, while not expired
+    Interactor -> Bullet : update(maze)
+    note right of Bullet : one step: move,\nbounce axis by axis
+    loop tank 1, tank 2
+      opt bullet.hits(tank)
+        Interactor -> Tank : takeHit()
+        note right of Tank : shield absorbs it,\notherwise destroyed
+        Interactor -> Bullet : onHitTank()
+      end
+    end
+  end
+  Interactor -> Bullet : age()
+end
+Interactor -> Match : getBullets().removeIf(isExpired)
+
+alt fewer than 2 tanks alive
+  Interactor -> Presenter : prepareRoundOverView(data)\nwinner = PLAYER_1 / PLAYER_2 / DRAW
+else
+  Interactor -> Presenter : prepareTickView(data)
+end
+Presenter -> ViewModel : setState(...)\nfirePropertyChanged()
+
+opt state.isRoundOver() (first time only)
+  ViewModel -> Wiring : propertyChange
+  Wiring -> GameView : stop()
+  Wiring -> EndRound : execute(winner)
+end
+
+GameView -> GameView : repaint()
+note right of GameView : paints layers back to front;\nControlTankPainter draws tanks\nand bullets on TANKS
+
+@enduml

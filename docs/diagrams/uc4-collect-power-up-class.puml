@@ -1,0 +1,232 @@
+@startuml uc4-collect-power-up-class
+title UC4 Collect Power-Up - Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+
+package "view" {
+  class GameView {
+    + addTickAction(action: Runnable): void
+    + addPainter(layer: GameLayer, painter: GameLayerPainter): void
+    + getTickCount(): long
+  }
+
+  class PowerUpPainter {
+    - viewModel: PowerUpViewModel
+    + paintItems(g: Graphics2D): void
+    + paintStatus(g: Graphics2D): void
+  }
+}
+
+package "interface_adapter.collect_power_up" {
+  class CollectPowerUpController {
+    - interactor: CollectPowerUpInputBoundary
+    + execute(tick: long): void
+  }
+
+  class CollectPowerUpPresenter {
+    - viewModel: PowerUpViewModel
+    + prepareSuccessView(outputData: CollectPowerUpOutputData): void
+  }
+
+  class PowerUpViewModel {
+    + {static} VIEW_NAME: String
+  }
+
+  class PowerUpState {
+    - icons: List<Icon>
+    - hudLabels: List<String>
+    - aimPaths: List<List<double[]>>
+  }
+}
+
+package "interface_adapter" {
+  class "ViewModel<T>" as ViewModel {
+    + getState(): T
+    + setState(state: T): void
+    + firePropertyChanged(): void
+  }
+}
+
+package "use_case.collect_power_up" {
+  interface CollectPowerUpInputBoundary {
+    + execute(inputData: CollectPowerUpInputData): void
+  }
+
+  class CollectPowerUpInputData {
+    - tick: long
+  }
+
+  class CollectPowerUpInteractor {
+    + {static} SPAWN_INTERVAL: int
+    + {static} MAX_POWER_UPS_ON_MAP: int
+    + {static} POWER_UP_RADIUS: double
+    + {static} MIN_SPAWN_DISTANCE: double
+    - gameState: CollectPowerUpDataAccessInterface
+    - presenter: CollectPowerUpOutputBoundary
+    - powerUpFactory: PowerUpFactory
+    - random: Random
+    + execute(inputData: CollectPowerUpInputData): void
+    - updateActivePowerUps(tanks: List<Tank>, maze: Maze): void
+    - trySpawnPowerUp(match: Match, tanks: List<Tank>): void
+    - checkCollection(match: Match, tanks: List<Tank>): int
+  }
+
+  interface CollectPowerUpDataAccessInterface {
+    + getCurrentMatch(): Match
+    + getActivePowerUp(tank: Tank): PowerUp
+    + setActivePowerUp(tank: Tank, powerUp: PowerUp): void
+  }
+
+  interface CollectPowerUpOutputBoundary {
+    + prepareSuccessView(outputData: CollectPowerUpOutputData): void
+  }
+
+  class CollectPowerUpOutputData {
+    - mapItems: List<MapItem>
+    - activePowerUps: List<String>
+    - remainingTicks: List<Integer>
+    - aimPaths: List<List<double[]>>
+    - collectedByPlayer: int
+  }
+}
+
+package "data_access" {
+  class InMemoryPowerUpDataAccessObject {
+    - currentMatch: Match
+    - activePowerUps: Map<Tank, PowerUp>
+    + setCurrentMatch(match: Match): void
+  }
+}
+
+package "entity" {
+  abstract class PowerUp {
+    + {static} UNLIMITED_AMMO: int
+    - x: double
+    - y: double
+    - duration: int
+    - ammo: int
+    + {abstract} getType(): PowerUpType
+    + {abstract} applyTo(tank: Tank): void
+    + {abstract} removeFrom(tank: Tank, maze: Maze): boolean
+    + getAimPath(holder: Tank, maze: Maze): List<double[]>
+    + tick(): void
+    + isExpired(holder: Tank): boolean
+    # consumeAmmo(): void
+  }
+
+  enum PowerUpType {
+    SHOTGUN
+    CANNON
+    SHIELD
+    SHRINK
+    LASER
+  }
+
+  class ShotgunPowerUp {
+    + {static} PELLETS: int
+    + createBullets(tank: Tank): List<Bullet>
+  }
+
+  class CannonPowerUp {
+    + createBullets(tank: Tank): List<Bullet>
+  }
+
+  class ShieldPowerUp {
+    + isExpired(holder: Tank): boolean
+  }
+
+  class ShrinkPowerUp {
+    + {static} SHRUNK_RADIUS: double
+    + applyTo(tank: Tank): void
+    + removeFrom(tank: Tank, maze: Maze): boolean
+  }
+
+  class LaserPowerUp {
+    + createBullets(tank: Tank): List<Bullet>
+    + getAimPath(tank: Tank, maze: Maze): List<double[]>
+  }
+
+  class LaserBeam {
+    + {static} MAX_STEPS: int
+    + {static} VISIBLE_TICKS: int
+    - bouncePoints: List<double[]>
+    + update(maze: Maze): void
+    + getStepsPerTick(): int
+    + getPath(): List<double[]>
+  }
+
+  class CannonBullet {
+    # hitsWall(maze: Maze): boolean
+    + getRadius(): double
+  }
+
+  class PowerUpFactory {
+    - random: Random
+    + create(type: PowerUpType, x: double, y: double): PowerUp
+    + createRandom(x: double, y: double): PowerUp
+  }
+
+  interface Weapon {
+    + createBullets(tank: Tank): List<Bullet>
+  }
+
+  class StandardWeapon
+  class Bullet
+
+  class Tank {
+    + setWeapon(weapon: Weapon): void
+    + setShielded(shielded: boolean): void
+    + setRadius(radius: double): void
+    + tryResetRadius(maze: Maze): boolean
+    + fire(): List<Bullet>
+    + takeHit(): boolean
+  }
+
+  class Match {
+    + getTank1(): Tank
+    + getTank2(): Tank
+    + getMaze(): Maze
+    + getPowerUps(): List<PowerUp>
+  }
+}
+
+GameView --> CollectPowerUpController : tick action
+GameView --> PowerUpPainter : ITEMS / OVERLAY painter
+PowerUpPainter --> PowerUpViewModel
+
+CollectPowerUpController --> CollectPowerUpInputBoundary
+CollectPowerUpInputBoundary <|.. CollectPowerUpInteractor
+CollectPowerUpInteractor --> CollectPowerUpDataAccessInterface
+CollectPowerUpInteractor --> CollectPowerUpOutputBoundary
+CollectPowerUpInteractor --> PowerUpFactory
+CollectPowerUpInteractor ..> CollectPowerUpInputData
+CollectPowerUpInteractor ..> CollectPowerUpOutputData
+CollectPowerUpOutputBoundary <|.. CollectPowerUpPresenter
+CollectPowerUpDataAccessInterface <|.. InMemoryPowerUpDataAccessObject
+
+CollectPowerUpPresenter --> PowerUpViewModel
+ViewModel <|-- PowerUpViewModel
+PowerUpViewModel --> PowerUpState
+
+PowerUp <|-- ShotgunPowerUp
+PowerUp <|-- CannonPowerUp
+PowerUp <|-- ShieldPowerUp
+PowerUp <|-- ShrinkPowerUp
+PowerUp <|-- LaserPowerUp
+Weapon <|.. LaserPowerUp
+Bullet <|-- LaserBeam
+LaserPowerUp ..> LaserBeam : creates
+PowerUp --> PowerUpType
+Weapon <|.. ShotgunPowerUp
+Weapon <|.. CannonPowerUp
+Weapon <|.. StandardWeapon
+Bullet <|-- CannonBullet
+CannonPowerUp ..> CannonBullet : creates
+ShotgunPowerUp ..> Bullet : creates
+PowerUpFactory ..> PowerUp : creates
+Tank --> Weapon
+Match o-- "0..*" PowerUp : on the map
+CollectPowerUpInteractor ..> Match
+@enduml

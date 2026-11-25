@@ -4,13 +4,13 @@ CSC207 Fall 2026 Final Project
 
 ## Team
 
-| Member | GitHub | MVP Use Case Lead |
-|---|---|---|
-| TODO Member 1 | @TODO | UC1 – Log In / Sign Up |
-| Weibo Yu | @asxyr | UC2 – Start Match |
-| TODO Member 3 | @TODO | UC3 – Control Tank |
-| TODO Member 4 | @TODO | UC4 – Collect Power-Up |
-| TODO Member 5 | @TODO | UC5 – End Round & Leaderboard |
+| Member | GitHub | MVP Use Case Lead | Also responsible for |
+|---|---|---|---|
+| TODO Member 1 | @christy80116002-star | UC1 – Log In / Sign Up | Login screen, saved accounts, the current players for each side (`CurrentPlayerDataAccessInterface`) |
+| Weibo Yu | @asxyr | UC2 – Start Match | Maps and maze generation, spawn points, the current match store (`InMemoryMatchDataAccessObject`), drawing walls (`MAZE` layer) |
+| TODO Member 3 | @SIMBAT6 | UC3 – Control Tank | Game loop and game screen framework (`GameView`, layers), tank and bullet rules, power-up hooks on `Tank`/`Bullet` |
+| Seojin Ahn | @ulsancitiboi | UC4 – Collect Power-Up | Power-up types and spawning, drawing power-ups and aim lines (`ITEMS` layer), power-up status (`OVERLAY` layer) |
+| TODO Member 5 | @Edev-cmd | UC5 – End Round & Leaderboard | Course API access (`DBPlayerStatsDataAccessObject`), scores and round result overlay, leaderboard screen |
 
 > **Workflow:** `main` is protected. All work happens on feature branches and is merged through Pull Requests
 > with at least one review. Every PR should update this README if it changes the design or progress.
@@ -25,8 +25,8 @@ CSC207 Fall 2026 Final Project
 
 Ricochet Tanks is a top-down, two-player tank battle game built with Java Swing. Two **players** share one
 keyboard; each controls a **tank** inside a **maze** made of **walls**. A tank can move forward and backward,
-rotate, and fire **bullets**. Bullets travel in a straight line and **bounce** off walls a limited number of times
-before disappearing, so players can hit opponents around corners — including themselves. When a tank is hit,
+rotate, and fire **bullets**. Bullets travel in a straight line and **bounce** off walls until their lifetime
+runs out, so players can hit opponents around corners — including themselves. When a tank is hit,
 it is destroyed and the **round** ends; the surviving player earns a point.
 
 During a round, **power-ups** spawn at random empty cells of the maze. A tank that drives over a power-up
@@ -79,18 +79,21 @@ round, the result is **recorded** to their account through an external API, and 
 #### UC3: Control Tank — *Lead: TODO Member 3*
 **Main Flow:**
 1. During a round, a player holds a movement key (Player 1: `W A S D`, Player 2: arrow keys).
-2. On every game tick, the system moves/rotates that tank, stopping it at walls.
+2. On every game tick, the system moves/rotates that tank, sliding it along walls instead of through them.
 3. The player presses the fire key (Player 1: `Q`, Player 2: `M`).
-4. The system spawns a bullet in front of the tank.
+4. The system fires the tank's current weapon; the bullet starts at the tank's centre.
 5. On every game tick, the system moves all bullets, bouncing them off walls.
 6. The system redraws the game screen.
 
 **Alternative Flows:**
-- The tank already has the maximum number of bullets on screen: no bullet is fired.
-- A bullet has bounced its maximum number of times or has expired: the system removes it.
+- The tank already has the maximum number of bullets on screen, or fired too recently: no bullet is fired.
+- A bullet's lifetime runs out: the system removes it.
 - A bullet hits a tank: the system destroys that tank and the round ends (continues in UC5).
+- A bullet hits a tank with a shield: the shield is used up and the tank survives.
+- A bullet bounces back to the tank that fired it: that tank is hit too.
+- Both tanks are destroyed on the same tick: the round is a draw (continues in UC5).
 
-#### UC4: Collect Power-Up — *Lead: TODO Member 4*
+#### UC4: Collect Power-Up — *Lead: Seojin Ahn*
 **Main Flow:**
 1. During a round, the system periodically spawns a power-up at a random empty cell.
 2. A player drives their tank over the power-up.
@@ -102,6 +105,12 @@ round, the result is **recorded** to their account through an external API, and 
 - The tank already holds a power-up: the new one replaces it.
 - The power-up's duration runs out or its ammo is used: the tank returns to its normal weapon.
 - The maximum number of power-ups is already on the map: no new one spawns.
+
+**Power-ups:** Shotgun (5-bullet spread), Cannon (goes through walls), Shield (absorbs one hit), Shrink (smaller tank for 5 s),
+Laser (beam that bounces across the maze in one tick, with a dashed aim line while held).
+
+Design notes: [`docs/design/uc4-collect-power-up.md`](docs/design/uc4-collect-power-up.md) ·
+class diagram: [`docs/diagrams/uc4-collect-power-up-class.puml`](docs/diagrams/uc4-collect-power-up-class.puml)
 
 #### UC5: End Round & View Leaderboard — *Lead: TODO Member 5*
 **Main Flow:**
@@ -159,9 +168,13 @@ See [`docs/diagrams/entities.puml`](docs/diagrams/entities.puml) for the UML cla
 - Variables: `x`, `y`, `width`, `height`
 - Methods: `intersectsCircle(x, y, radius)`
 
-**`PowerUp`** *(abstract; e.g. `ShotgunPowerUp`, `LaserPowerUp`, `ShieldPowerUp`)*
-- Variables: `x`, `y`, `type`, `duration`
-- Methods: `fire(Tank): List<Bullet>`, `isExpired()`
+**`PowerUp`** *(abstract; `ShotgunPowerUp`, `CannonPowerUp`, `ShieldPowerUp`, `ShrinkPowerUp`, `LaserPowerUp`, created by `PowerUpFactory`)*
+- Variables: `x`, `y`, `duration`, `ammo`
+- Methods: `getType(): PowerUpType`, `applyTo(Tank)`, `removeFrom(Tank, Maze): boolean`, `tick()`, `isExpired(Tank)`,
+  `getAimPath(Tank, Maze)`
+- Shotgun, Cannon and Laser are also `Weapon`s (installed with `Tank.setWeapon`). `CannonPowerUp` fires a `CannonBullet`
+  (overrides `hitsWall`); `LaserPowerUp` fires a `LaserBeam` (moves its whole length in one tick, `getPath()` = bounce points).
+  Shield uses `Tank.setShielded`; Shrink uses `Tank.setRadius` / `tryResetRadius`.
 
 **`Player`**
 - Variables: `username`, `isGuest`, `wins`, `losses`

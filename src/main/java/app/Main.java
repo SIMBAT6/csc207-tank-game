@@ -9,6 +9,7 @@ public class Main {
             JFrame application = new AppBuilder()
                     .addMainMenuView()
                     .addGameView()
+                    .addCollectPowerUpUseCase()
                     .addLeaderboardView()
                     .addViewLeaderboardUseCase()
                     .build();
