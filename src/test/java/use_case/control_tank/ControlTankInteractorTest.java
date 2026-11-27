@@ -52,13 +52,26 @@ class ControlTankInteractorTest {
     }
 
     @Test
-    void firingAddsTheWeaponsBulletsAtTheTankCentre() {
+    void aFiredBulletLeavesFromTheBarrelTip() {
         tick(FIRE, NONE);
 
         assertEquals(1, match.getBullets().size());
         Bullet bullet = match.getBullets().get(0);
         assertEquals(Match.PLAYER_1, bullet.getOwnerId());
-        assertEquals(100 + Bullet.SPEED, bullet.getX(), 1e-9);
+        double launched = Math.ceil(tank1.getBarrelLength() / Bullet.SPEED) * Bullet.SPEED;
+        assertTrue(launched >= tank1.getBarrelLength());
+        assertEquals(100 + launched + Bullet.SPEED, bullet.getX(), 1e-9);
+    }
+
+    @Test
+    void aBulletFiredWithTheBarrelOnAWallBouncesInsteadOfStartingInsideIt() {
+        Tank againstWall = new Tank(Match.PLAYER_1, 10 + Tank.DEFAULT_RADIUS, 100, Math.PI);
+        Match walled = new Match(match.getPlayer1(), match.getPlayer2(), maze, againstWall, tank2);
+        new ControlTankInteractor(() -> walled, presenter).execute(new ControlTankInputData(FIRE, NONE));
+
+        Bullet bullet = walled.getBullets().get(0);
+        assertFalse(maze.blocksCircle(bullet.getX(), bullet.getY(), bullet.getRadius()));
+        assertTrue(bullet.getVelocityX() > 0);
     }
 
     @Test

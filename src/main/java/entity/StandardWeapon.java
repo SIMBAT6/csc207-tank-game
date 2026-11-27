@@ -3,7 +3,8 @@ package entity;
 import java.util.List;
 
 /**
- * The default weapon: one bullet from the tank's centre in the direction it faces.
+ * The default weapon: one bullet in the direction the tank faces. It is created at the tank's
+ * centre, and Control Tank moves it to the barrel tip.
  */
 public class StandardWeapon implements Weapon {
 
