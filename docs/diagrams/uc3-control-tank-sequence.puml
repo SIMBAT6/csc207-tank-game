@@ -33,8 +33,12 @@ loop tank 1, tank 2
   Interactor -> Tank : coolDown()
   opt fire && canFire(activeBullets)
     Interactor -> Tank : fire()
-    Tank --> Interactor : bullets from its Weapon\n(start at the tank centre)
-    Interactor -> Match : getBullets().addAll(bullets)
+    Tank --> Interactor : bullets from its Weapon\n(created at the tank centre)
+    loop each new bullet, until it reaches the barrel tip
+      Interactor -> Bullet : update(maze), hit checks
+      note right of Bullet : bounces if the barrel\ntouches a wall
+    end
+    Interactor -> Match : getBullets().add(bullet)
   end
 end
 
@@ -62,9 +66,9 @@ end
 Presenter -> ViewModel : setState(...)\nfirePropertyChanged()
 
 opt state.isRoundOver() (first time only)
-  ViewModel -> Wiring : propertyChange
-  Wiring -> GameView : stop()
-  Wiring -> EndRound : execute(winner)
+  ViewModel -> Wiring : propertyChange(ROUND_OVER)
+  Wiring -> EndRound : roundOverAction = execute(winner)
+  note right of EndRound : calls Match.endRound(winner);\nlater ticks are skipped,\nthe loop keeps repainting
 end
 
 GameView -> GameView : repaint()
