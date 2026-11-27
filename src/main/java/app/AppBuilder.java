@@ -8,6 +8,10 @@ import interface_adapter.ViewManagerModel;
 import interface_adapter.collect_power_up.CollectPowerUpController;
 import interface_adapter.collect_power_up.CollectPowerUpPresenter;
 import interface_adapter.collect_power_up.PowerUpViewModel;
+import interface_adapter.control_tank.ControlTankController;
+import interface_adapter.control_tank.ControlTankPresenter;
+import interface_adapter.control_tank.ControlTankViewModel;
+import interface_adapter.control_tank.KeyBindings;
 import interface_adapter.login.LoginController;
 import interface_adapter.login.LoginPresenter;
 import interface_adapter.login.LoginViewModel;
@@ -15,9 +19,11 @@ import interface_adapter.view_leaderboard.LeaderboardViewModel;
 import interface_adapter.view_leaderboard.ViewLeaderboardController;
 import interface_adapter.view_leaderboard.ViewLeaderboardPresenter;
 import use_case.collect_power_up.CollectPowerUpInteractor;
+import use_case.control_tank.ControlTankInteractor;
 import use_case.login.LoginInteractor;
 import use_case.session.CurrentPlayerDataAccessInterface;
 import use_case.view_leaderboard.ViewLeaderboardInteractor;
+import view.ControlTankPainter;
 import view.GameLayer;
 import view.GameView;
 import view.LeaderboardView;
@@ -37,6 +43,7 @@ import javax.swing.JPanel;
 import java.awt.CardLayout;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.function.IntConsumer;
 
 /**
  * Builds the application: creates each view and wires it to its use case.
@@ -67,6 +74,12 @@ public class AppBuilder {
     /** The one current match, shared by Start Match (UC2), Collect Power-Up (UC4) and End Round (UC5). */
     private final InMemoryMatchDataAccessObject matchDataAccessObject =
             new InMemoryMatchDataAccessObject();
+
+    /**
+     * Runs once when a round ends, with {@code Match.PLAYER_1}, {@code PLAYER_2} or {@code DRAW}.
+     * End Round (UC5) sets it to {@code endRoundController::execute}.
+     */
+    private IntConsumer roundOverAction = winner -> { };
 
     private MainMenuView mainMenuView;
     private GameView gameView;
@@ -126,6 +139,25 @@ public class AppBuilder {
         return this;
     }
 
+    /**
+     * Control Tank (UC3): driving, firing, bouncing and hits every tick, drawn on the TANKS layer.
+     * Call after addGameView() and before addCollectPowerUpUseCase().
+     */
+    public AppBuilder addControlTankUseCase() {
+        final ControlTankViewModel viewModel = new ControlTankViewModel();
+        final ControlTankController controller = new ControlTankController(
+                new ControlTankInteractor(matchDataAccessObject, new ControlTankPresenter(viewModel)),
+                KeyBindings.PLAYER_1, KeyBindings.PLAYER_2);
+        gameView.addTickAction(() -> controller.execute(gameView.getPressedKeys()));
+        gameView.addPainter(GameLayer.TANKS, new ControlTankPainter(viewModel));
+        viewModel.addPropertyChangeListener(event -> {
+            if (ControlTankViewModel.ROUND_OVER.equals(event.getPropertyName())) {
+                roundOverAction.accept(viewModel.getState().getWinner());
+            }
+        });
+        return this;
+    }
+
     /** Collect Power-Up (UC4): runs every tick after Control Tank (UC3); call after addGameView(). */
     public AppBuilder addCollectPowerUpUseCase() {
         final Random random = new Random();
@@ -144,7 +176,7 @@ public class AppBuilder {
     //  match data access object and playerStatsDataAccessObject, EndRoundPresenter + EndRoundViewModel,
     //  a RoundResultOverlay registered on the game screen with
     //  gameView.addPainter(GameLayer.OVERLAY, g -> roundResultOverlay.paint(g, GameView.WIDTH, GameView.HEIGHT)),
-    //  and call EndRoundController.execute(winner) when the round ends.
+    //  and set roundOverAction = endRoundController::execute so it runs when Control Tank reports the end of a round.
 
     public JFrame build() {
         wireLogin();
