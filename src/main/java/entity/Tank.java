@@ -15,8 +15,8 @@ public class Tank {
     public static final double ROTATION_SPEED = 0.08;
     public static final int FIRE_COOLDOWN = 15;
     public static final int MAX_BULLETS = 5;
-    /** The barrel reaches this many radii from the centre; bullets leave from its tip. */
-    public static final double BARREL_LENGTH_RATIO = 1.4;
+    /** The barrel reaches this many radii from the centre (as drawn by the tank sprite); bullets leave from its tip. */
+    public static final double BARREL_LENGTH_RATIO = 1.7;
 
     private final int id;
     private double x;

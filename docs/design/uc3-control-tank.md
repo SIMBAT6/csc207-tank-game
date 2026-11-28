@@ -39,6 +39,7 @@ scoring, saving results and starting the next round (UC5), drawing walls (UC2).
 | **A hit calls `tank.takeHit()` and `bullet.onHitTank()`** | A shield absorbs one hit and is used up. A special bullet (e.g. a laser beam) decides for itself whether it disappears. |
 | **UC3 detects the end of a round but does not score it**: fewer than 2 tanks alive means the round is over. The winner is `Match.PLAYER_1`, `Match.PLAYER_2` or `Match.DRAW` (both tanks destroyed on the same tick) | UC5 owns `Match.endRound(...)` and the scores, so there is one owner for each rule. |
 | **Each use case has its own view model and painter** instead of one shared `GameState` | Leads don't edit each other's classes. The layers decide the drawing order (`MAZE` → `ITEMS` → `TANKS` → `OVERLAY`). |
+| **Tanks are drawn as sprites** (`src/main/resources/sprites`: blue for Player 1, red for Player 2, and a wreck for each), turned to the tank's angle. Each sprite is square, with the tank's centre in the middle and the barrel tip on the right edge, so it is drawn `2 × BARREL_LENGTH_RATIO` radii wide. Collisions stay circles | The barrel tip in the picture is exactly where bullets appear. A missing image falls back to plain shapes, so tests and the game never fail on art. |
 | **Output data holds plain values**, never entities | Outer layers can't change the game state by accident. |
 
 ## Power-up hooks (for UC4)
@@ -86,7 +87,7 @@ which goes back to UC2.
 | `Tank.DEFAULT_RADIUS` | 14 px |
 | `Tank.SPEED` | 3 px/tick |
 | `Tank.ROTATION_SPEED` | 0.08 rad/tick |
-| `Tank.BARREL_LENGTH_RATIO` | 1.4 × radius (bullets leave from the tip) |
+| `Tank.BARREL_LENGTH_RATIO` | 1.7 × radius (the sprite's barrel tip; bullets leave from it) |
 | `Tank.FIRE_COOLDOWN` | 15 ticks |
 | `Tank.MAX_BULLETS` | 5 |
 | `Bullet.DEFAULT_RADIUS` | 3 px |
@@ -126,4 +127,6 @@ which goes back to UC2.
 - ✅ `KeyBindingsTest` (5): pressed keys become the right command, opposite keys cancel out, the controller
   builds both players' commands from the same keys.
 - ✅ `ControlTankPresenterTest` (3): output data becomes sprites; the end of a round is announced once per round.
-- ✅ `ControlTankPainterTest` (3): player colours, wrecks, bullets as dots and beams as lines.
+- ✅ `ControlTankPainterTest` (5): the sprites are bundled and turn with the tank; without sprites, player colours
+  and wrecks; bullets as dots and beams as lines.
+- ✅ `SpritesTest` (2): the power-up icons are bundled, and a missing image loads as `null`.

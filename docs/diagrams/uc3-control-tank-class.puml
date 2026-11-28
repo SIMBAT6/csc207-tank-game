@@ -36,6 +36,7 @@ package "view" {
 
   class ControlTankPainter {
     - viewModel: ControlTankViewModel
+    - skin: Skin  {tank and wreck sprites}
     + paint(g: Graphics2D): void
   }
 }
