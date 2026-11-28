@@ -11,16 +11,19 @@ import java.util.List;
  * overriding the protected/overridable hooks: getRadius, getStepsPerTick, hitsWall,
  * onHitTank and getPath.</p>
  *
- * <p>Bullets start at the centre of the tank that fired them, so they cannot hit that tank
- * until they have travelled ARMING_DISTANCE. After that they can bounce back and hit it.</p>
+ * <p>Weapons create bullets at the centre of the tank that fires them. In the same tick Control
+ * Tank moves them step by step along the barrel to its tip, so a bullet never starts inside a
+ * wall the barrel is touching: it bounces off it instead. A bullet cannot hit its own tank
+ * until it has travelled ARMING_DISTANCE. After that it can bounce back and hit it.</p>
  *
  * <p>Each step must be shorter than 2 * getRadius(), otherwise a bullet could skip over a
  * thin wall. Go faster with more steps per tick, not a bigger velocity.</p>
  */
 public class Bullet {
     public static final double DEFAULT_RADIUS = 3;
-    public static final double SPEED = 4.0;
-    public static final int LIFETIME = 600;
+    public static final double SPEED = 5.0;
+    /** How many ticks a bullet lasts: 375 x 16 ms = 6 s. */
+    public static final int LIFETIME = 200;
     public static final double ARMING_DISTANCE = 40;
 
     private final int ownerId;

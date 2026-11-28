@@ -7,6 +7,7 @@ hide empty members
 
 package "app" {
   class AppBuilder {
+    - roundOverAction: IntConsumer
     + addControlTankUseCase(): AppBuilder
   }
 }
@@ -35,6 +36,7 @@ package "view" {
 
   class ControlTankPainter {
     - viewModel: ControlTankViewModel
+    - skin: Skin  {tank and wreck sprites}
     + paint(g: Graphics2D): void
   }
 }
@@ -58,11 +60,13 @@ package "interface_adapter.control_tank" {
     + prepareRoundOverView(data: ControlTankOutputData): void
   }
 
-  class ControlTankViewModel
+  class ControlTankViewModel {
+    + {static} ROUND_OVER = "roundOver"
+  }
 
   class ControlTankState {
-    - tanks: List<TankData>
-    - bullets: List<BulletData>
+    - tanks: List<TankSprite>
+    - bullets: List<BulletSprite>
     - roundOver: boolean
     - winner: int
   }
@@ -158,6 +162,7 @@ package "entity" {
     + hits(tank: Tank): boolean
     + onHitTank(): void
     + getRadius(): double
+    + getBarrelLength(): double
     + getStepsPerTick(): int
     + getPath(): List<double[]>
     # hitsWall(maze: Maze): boolean
@@ -189,7 +194,7 @@ package "data_access" {
 ' --- wiring ---
 AppBuilder ..> GameView : addTickAction,\naddPainter(TANKS)
 AppBuilder ..> ControlTankController
-AppBuilder ..> ControlTankViewModel : on roundOver:\nstop loop, call UC5
+AppBuilder ..> ControlTankViewModel : on ROUND_OVER:\nroundOverAction(winner) (UC5)
 
 ' --- dependencies (all point inward) ---
 ControlTankPainter ..|> GameLayerPainter

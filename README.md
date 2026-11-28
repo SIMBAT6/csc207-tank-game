@@ -218,7 +218,7 @@ This API satisfies both the **external API** and the **data persistence** requir
 
 Run the tests with `mvn test`, or right-click `src/test/java` → **Run 'All Tests'** in IntelliJ.
 
-Controls (driving and firing work once Control Tank is merged): Player 1 — `W A S D` to drive, `Q` to fire ·
+Controls: Player 1 — `W A S D` to drive, `Q` to fire ·
 Player 2 — arrow keys to drive, `M` to fire · `Esc` — back to the menu.
 
 ## Development Notes

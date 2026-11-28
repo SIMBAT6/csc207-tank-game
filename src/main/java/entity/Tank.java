@@ -11,10 +11,12 @@ import java.util.List;
  */
 public class Tank {
     public static final double DEFAULT_RADIUS = 14;
-    public static final double SPEED = 2.0;
-    public static final double ROTATION_SPEED = 0.06;
+    public static final double SPEED = 3;
+    public static final double ROTATION_SPEED = 0.08;
     public static final int FIRE_COOLDOWN = 15;
     public static final int MAX_BULLETS = 5;
+    /** The barrel reaches this many radii from the centre (as drawn by the tank sprite); bullets leave from its tip. */
+    public static final double BARREL_LENGTH_RATIO = 1.7;
 
     private final int id;
     private double x;
@@ -120,6 +122,11 @@ public class Tank {
 
     public double getRadius() {
         return radius;
+    }
+
+    /** How far the barrel tip is from the centre. It shrinks with the tank. */
+    public double getBarrelLength() {
+        return radius * BARREL_LENGTH_RATIO;
     }
 
     public void setRadius(double radius) {
